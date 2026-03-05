@@ -1,0 +1,40 @@
+# GeoSupply AI — Pinned Dependencies (FA v1)
+# Install: pip install -r requirements.txt
+# Dev:     pip install -r requirements.txt -e ".[dev]"
+
+# Core
+pydantic>=2.0,<3.0
+httpx>=0.25.0
+
+# Databases
+chromadb>=0.4.0
+supabase>=2.0.0
+
+# ML
+xgboost>=2.0.0
+sentence-transformers>=2.2.0
+
+# Graph
+networkx>=3.0
+
+# UI
+streamlit>=1.30.0
+rich>=13.0.0
+
+# Security
+pyotp>=2.9.0
+pyjwt>=2.8.0
+cryptography>=41.0.0
+
+# Resilience
+tenacity>=8.2.0
+
+# Logging
+structlog>=23.0.0
+
+# Dev/Test
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0
+ruff>=0.1.0
+mypy>=1.7.0
