@@ -1,9 +1,10 @@
 """
-GeoSupply AI — All 23 Pydantic v2 Schemas (FA v1)
+GeoSupply AI — All 25 Pydantic v2 Schemas (FA v2)
 Part X: Registry — every schema used by the swarm.
 
 Schema #1-22: v10 base schemas
-Schema #23: WorkerError (FA v1 G9)
+Schema #23: WorkerError (FA v2 G9)
+Schema #24: GeoEventRecord | Schema #25: GeoEventTimeline
 
 Every schema has schema_version field (FA v1 G4 — SchemaVersionManager).
 """
@@ -344,6 +345,36 @@ class WorkerError(BaseModel):
 
 
 # ============================================================
+# Schema #24: GeoEventRecord
+# Used by: EventExtractorWorker
+# ============================================================
+class GeoEventRecord(BaseModel):
+    schema_version: int = 1
+    event_type: Literal[
+        "WAR", "CALAMITY", "POLITICAL_SHIFT", "TRADE_DISPUTE", "CYBER_ATTACK", "OTHER"
+    ]
+    description: str
+    source_clipping: str
+    severity: float = Field(ge=0.0, le=1.0)
+    locations: list[str] = Field(default_factory=list)
+    date_occurred: datetime
+
+
+# ============================================================
+# Schema #25: GeoEventTimeline
+# Used by: TimelineGeneratorAgent
+# ============================================================
+class TimelineNode(BaseModel):
+    event: GeoEventRecord
+    related_events: list[str] = Field(default_factory=list)
+
+class GeoEventTimeline(BaseModel):
+    schema_version: int = 1
+    timeline_name: str
+    nodes: list[TimelineNode] = Field(default_factory=list)
+    identified_trend: str = ""
+
+# ============================================================
 # ALL SCHEMAS — export list for schema version manager
 # ============================================================
 ALL_SCHEMAS: dict[str, type[BaseModel]] = {
@@ -370,4 +401,6 @@ ALL_SCHEMAS: dict[str, type[BaseModel]] = {
     "CostProjection": CostProjection,
     "Event": Event,
     "WorkerError": WorkerError,
+    "GeoEventRecord": GeoEventRecord,
+    "GeoEventTimeline": GeoEventTimeline,
 }

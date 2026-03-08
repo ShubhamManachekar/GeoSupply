@@ -65,6 +65,11 @@ geosupply backup <action>
     ├── backup restore <target>     → Restore from backup
     └── backup verify               → Verify backup integrity
 
+geosupply audit <action>              ← DYNAMIC CROSS-PHASE CHECKS (v10)
+    ├── audit run --level <std|strict>  → Run dynamic component discovery & tests
+    ├── audit findings              → Last dynamic test suite results
+    └── audit categories            → List available test categories (logic, breakage, oversight)
+
 geosupply channel <action>
     ├── channel list                → All ingestion channels
     ├── channel verify <id>         → Re-verify channel fingerprint

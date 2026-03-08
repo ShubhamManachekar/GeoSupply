@@ -1,4 +1,4 @@
-# Testing Patterns — FA v1 (Updated Phase 1)
+# Testing Patterns — FA v2 (Updated Phase 14)
 
 ## Core Philosophy: "Not Mock, Logically"
 
@@ -159,7 +159,8 @@ $env:PYTHONPATH="src"; python -m pytest tests/unit/ -v --tb=short -W error::Depr
 $env:PYTHONPATH="src"; python -m pytest tests/unit/test_logging_agent.py -v
 ```
 
-## Current Stats (Phase 1 Complete)
-- 155 tests, 0 warnings, 99% coverage
+## Current Stats (Phase 14 Complete)
+- 325 tests, 0 warnings, 97% coverage
 - All agents at 95%+, 6 files at 100%
 - 86/86 cross-phase audit checks passed
+- 5/5 dynamic audit CLI checks passed

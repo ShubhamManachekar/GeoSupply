@@ -1,9 +1,9 @@
 """
 GeoSupply AI — EventBus
-FA v1 | Part I, Part VIII | Cross-layer
+FA v2 | Part I, Part VIII | Cross-layer
 
 Pub/sub event system for horizontal communication.
-FA v1 G3: All events are signed with HMAC-SHA256 per-agent keys.
+FA v2 G3: All events are signed with HMAC-SHA256 per-agent keys.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import hmac
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Callable, Awaitable
 
 from geosupply.schemas import Event

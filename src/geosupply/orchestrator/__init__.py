@@ -1,1 +1,1 @@
-"""GeoSupply AI — Orchestrator package. SwarmMaster (Phase 8)."""
+"""GeoSupply AI — Orchestrator package scaffold (no concrete SwarmMaster yet)."""

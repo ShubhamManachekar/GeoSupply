@@ -1,6 +1,6 @@
 """
 HealthCheckAgent — Infrastructure Singleton (#3)
-FA v1 | Part IV Group A | Layer 3
+FA v2 | Part IV Group A | Layer 3
 
 Contract: check() → {status, latency, queue_depth}
 Monitors registered agents, workers, and EventBus health.

@@ -5,7 +5,7 @@
 ```python
 """
 [SubAgentName] — [one-line description]
-Part of: GeoSupply AI FA v1
+Part of: GeoSupply AI FA v2
 Layer: 4 (SubAgent)
 Phase: [build phase number]
 """

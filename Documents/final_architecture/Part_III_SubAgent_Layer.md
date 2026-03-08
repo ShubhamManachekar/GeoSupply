@@ -1,5 +1,5 @@
-# Part III: SubAgent Layer — Composable Pipelines + 13 SubAgents
-## FA v1 | Gap Mitigations: G1, G8 applied
+# Part III: SubAgent Layer — Composable Pipelines + 15 SubAgents
+## FA v2 | Gap Mitigations: G1, G8 applied | World Monitor Integration
 
 ## 3.1 BaseSubAgent Class
 
@@ -47,7 +47,7 @@ class BaseSubAgent(ABC):
 
 ---
 
-## 3.2 Complete SubAgent Inventory (13 SubAgents)
+## 3.2 Complete SubAgent Inventory (15 SubAgents)
 
 ### RAG Pipeline SubAgents (5)
 
@@ -244,9 +244,68 @@ class PenetrationTestSubAgent(BaseSubAgent):
     name = "PenetrationTestSubAgent"
 ```
 
+### FA v2 New SubAgents (2) — World Monitor Integration
+
+#### ConvergenceSubAgent
+```python
+class ConvergenceSubAgent(BaseSubAgent):
+    """
+    Detects multi-domain incidents converging in the same geographic region.
+    Inspired by World Monitor's Geographic Convergence Detection.
+
+    PIPELINE:
+        Step 1: Collect events from NewsWorker, DisasterWorker, AISWorker
+        Step 2: Group events by 0.5° spatial grid + 24h time window
+        Step 3: Score convergence = weighted sum of event diversity
+        Step 4: If convergence_score > threshold → emit CONVERGENCE_ALERT event
+
+    SCORING:
+        base_score = num_unique_domains × 10
+        recency_boost = events_in_last_6h × 5
+        severity_boost = sum(event_severity for high-severity events) × 3
+        convergence_score = base_score + recency_boost + severity_boost
+
+    THRESHOLDS:
+        > 30 = ELEVATED (log + dashboard)
+        > 60 = HIGH (alert admin)
+        > 90 = CRITICAL (auto-escalate to SwarmMaster)
+    """
+    name = "ConvergenceSubAgent"
+    pipeline_steps = ["collect", "spatial_group", "score", "alert"]
+```
+
+#### CascadeSubAgent
+```python
+class CascadeSubAgent(BaseSubAgent):
+    """
+    Models infrastructure dependency chains to predict cascade failures.
+    Inspired by World Monitor's Infrastructure Cascade Analysis.
+
+    PIPELINE:
+        Step 1: Load infrastructure dependency graph (cables, pipelines, ports)
+        Step 2: Given a disruption event, identify first-order dependencies
+        Step 3: Walk the graph to find second/third-order impacts
+        Step 4: Calculate cascade severity score per affected country
+
+    DEPENDENCY TYPES:
+        - Undersea cables → Internet connectivity
+        - Oil/gas pipelines → Energy supply
+        - Maritime chokepoints → Trade routes
+        - Power plants → Grid stability
+
+    OUTPUT: CascadeReport schema with:
+        - affected_countries: list[str]
+        - cascade_depth: int (1-3)
+        - severity_score: float (0-100)
+        - redundancy_factor: float (0-1, higher = more resilient)
+    """
+    name = "CascadeSubAgent"
+    pipeline_steps = ["load_graph", "identify_impact", "walk_cascade", "score"]
+```
+
 ## CROSS-CHECK ✅
 ```
-✓ 13 subagents listed (8 v9 + 5 v10)
+✓ 15 subagents listed (8 v9 + 5 v10 + 2 FA v2)
 ✓ RAG pipeline fully documented (5-step)
 ✓ MoA pattern with v10 fallback chain
 ✓ All v10 subagents map to specific gap fixes
@@ -255,4 +314,6 @@ class PenetrationTestSubAgent(BaseSubAgent):
 ✓ No SubAgent nesting (SubAgents don't call SubAgents)
 ✓ [FA v1] BaseSubAgent has setup()/teardown() lifecycle hooks (G1)
 ✓ [FA v1] MoA Level 2 scoring criteria defined (G8)
+✓ [FA v2] ConvergenceSubAgent for multi-domain geographic detection
+✓ [FA v2] CascadeSubAgent for infrastructure dependency analysis
 ```

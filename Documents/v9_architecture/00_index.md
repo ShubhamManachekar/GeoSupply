@@ -3,6 +3,8 @@
 **Version:** 9.0 | **Date:** March 2026 | **Classification:** Confidential  
 **Evolved from:** v8.0 Architecture | **All costs in INR**
 
+> Legacy Notice: `v9_architecture/` is historical context. Use `Documents/fa_v3_architecture/` as the canonical architecture set.
+
 ---
 
 ## Document Index

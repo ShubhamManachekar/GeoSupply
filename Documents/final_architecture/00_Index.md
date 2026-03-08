@@ -1,5 +1,9 @@
 # GeoSupply AI — Final Architecture
-## FA v1 (Final Architecture v1) | March 2026 | All Costs in INR | Classification: Confidential
+## FA v2 (Final Architecture v2) | March 2026 | All Costs in INR | Classification: Confidential
+
+> Legacy Notice: `final_architecture/` is FA v2 reference material. For current implementation-truth and active planning, use `Documents/fa_v3_architecture/`.
+
+> **FA v2 UPGRADE**: Integrated World Monitor reference features — natural disasters, aviation/military tracking, energy intelligence, financial signals, geographic convergence detection, and infrastructure cascade analysis. All new APIs are free tier.
 
 > **"Every agent is a citizen, not a script. Trust nothing. Verify everything."**
 
@@ -7,20 +11,20 @@
 
 ## Architecture at a Glance
 
-| Metric | Count |
-|--------|-------|
-| **Layers** | 7 + LoopholeHunter cross-layer |
-| **Workers** | 40 |
-| **SubAgents** | 13 |
-| **Agents** | 38 |
-| **Supervisors** | 14 |
-| **APIs** | 42+ |
-| **Skills** | 30 |
-| **Pydantic Schemas** | 23 |
-| **Continuous Audit Checks** | 24 |
-| **Penetration Tests** | 8 |
-| **Test Scenarios** | 18 |
-| **Total Components** | ~137 |
+| Metric | FA v1 | FA v2 |
+|--------|-------|-------|
+| **Layers** | 7 + LH | 7 + LH |
+| **Workers** | 41 | **45** (+4) |
+| **SubAgents** | 13 | **15** (+2) |
+| **Agents** | 39 | 39 |
+| **Supervisors** | 14 | 14 |
+| **APIs** | 42+ | **59+** (+17) |
+| **Skills** | 31 | **33** (+2) |
+| **Pydantic Schemas** | 25 | **28** (+3) |
+| **Continuous Audit Checks** | 24 | 24 |
+| **Penetration Tests** | 8 | 8 |
+| **Test Scenarios** | 18 | 18 |
+| **Total Components** | ~141 | **~147** |
 
 ---
 
@@ -29,8 +33,8 @@
 | Part | File | Title | Pages |
 |------|------|-------|-------|
 | I | [Part_I_Foundation.md](./Part_I_Foundation.md) | Foundation — Principles, Topology, Evolution | Core |
-| II | [Part_II_Worker_Layer.md](./Part_II_Worker_Layer.md) | Worker Layer — BaseWorker + 40 Workers | Layer 5 |
-| III | [Part_III_SubAgent_Layer.md](./Part_III_SubAgent_Layer.md) | SubAgent Layer — Pipelines + 13 SubAgents | Layer 4 |
+| II | [Part_II_Worker_Layer.md](./Part_II_Worker_Layer.md) | Worker Layer — BaseWorker + 45 Workers | Layer 5 |
+| III | [Part_III_SubAgent_Layer.md](./Part_III_SubAgent_Layer.md) | SubAgent Layer — Pipelines + 15 SubAgents | Layer 4 |
 | IV | [Part_IV_Agent_Layer.md](./Part_IV_Agent_Layer.md) | Agent Layer — 38 Agents + Capabilities | Layer 3 |
 | V | [Part_V_Supervisor_Orchestrator.md](./Part_V_Supervisor_Orchestrator.md) | Supervisors (14) + SwarmMaster Orchestrator | Layers 1-2 |
 | VI | [Part_VI_Intelligence_Engine.md](./Part_VI_Intelligence_Engine.md) | Self-Learning, Knowledge Graph, Cyber Threat Intel | Intelligence |
@@ -38,6 +42,7 @@
 | VIII | [Part_VIII_Security.md](./Part_VIII_Security.md) | Security Hardening, LoopholeHunter, PenTest | Security |
 | IX | [Part_IX_Revenue_DevOps.md](./Part_IX_Revenue_DevOps.md) | Marketing, Revenue, Tech Team, CI/CD, Dev Tooling | Business |
 | X | [Part_X_Registry_Roadmap.md](./Part_X_Registry_Roadmap.md) | APIs, Skills, Schemas, Census, Build Roadmap | Reference |
+| XI | [Part_XI_API_Reference.md](./Part_XI_API_Reference.md) | API Implementation Reference — Endpoints, Auth, Rate Limits | Reference |
 
 ---
 
@@ -70,7 +75,7 @@ After writing each Part, the following cross-checks are performed:
   ✓ No feature from v9 or v10 is omitted
 ```
 
-## FA v1 Gap Mitigations Applied
+## FA v1 Gap Mitigations Applied (Carried Forward into FA v2)
 
 | Gap | Mitigation | Part Updated |
 |-----|------------|-------------|

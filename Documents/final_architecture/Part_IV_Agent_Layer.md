@@ -1,4 +1,4 @@
-# Part IV: Agent Layer — 38 Agents + Capability Advertising
+# Part IV: Agent Layer — 39 Agents + Capability Advertising
 ## FA v1 | Gap Mitigations: G2 applied
 
 ## 4.1 BaseAgent Class
@@ -54,7 +54,7 @@ class BaseAgent(ABC):
 
 ---
 
-## 4.2 Complete Agent Census (38 Agents, 7 Groups)
+## 4.2 Complete Agent Census (39 Agents, 7 Groups)
 
 ### Group A: Infrastructure Singletons (9) — Always On, Off Critical Path
 
@@ -70,7 +70,7 @@ class BaseAgent(ABC):
 | 8 | **WatchdogAgent** | Separate process. Monitors HealthCheck (5min), LoopholeHunter (30min), LoggingAgent (10min) | **v10** |
 | 9 | **InputGuardAgent** | Pre-processing sanitisation: token count → injection scan → unicode normalise → sanitise | **v10** |
 
-### Group B: Intelligence & Knowledge (4)
+### Group B: Intelligence & Knowledge (5)
 
 | # | Agent | Role | v8/v9/v10 |
 |---|-------|------|-----------|
@@ -78,6 +78,7 @@ class BaseAgent(ABC):
 | 11 | **PerformanceLearnerAgent** | XGBoost model predicts optimal tier routing. v10: A/B test before committing changes | v9 |
 | 12 | **SourceClusterAgent** | Detects coordinated source networks by IP/domain/author/style embedding | **v10** |
 | 13 | **ChannelVerificationAgent** | Telegram/RSS channel integrity via fingerprinting + KL divergence drift detection | **v10** |
+| 13b| **TimelineGeneratorAgent** | Parses GeoEventRecords to build chronological/spatial event graphs + trend detection | **FA v1.1** |
 
 ### Group C: Dev Agents (4) — Build-Time Only
 
@@ -131,7 +132,7 @@ class BaseAgent(ABC):
 
 ## CROSS-CHECK ✅
 ```
-✓ 38 agents listed (9 infra + 4 intel + 4 dev + 5 test + 4 tech + 6 marketing + 6 audit)
+✓ 39 agents listed (9 infra + 4 intel + 4 dev + 5 test + 4 tech + 6 marketing + 6 audit)
 ✓ All agents have capabilities and contracts
 ✓ All v10 agents map to loophole/gap fixes
 ✓ Internal circuit breakers on all Tier-3 calls (v10)

@@ -1,6 +1,6 @@
 """
 SecurityAgent — Infrastructure Singleton (#4)
-FA v1 | Part IV Group A | Layer 3
+FA v2 | Part IV Group A | Layer 3
 
 Contract: get_key(service) → str — vault-backed key access
 Manages API key retrieval, EventBus signing keys (G3), and rotation.

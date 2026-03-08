@@ -1,6 +1,6 @@
 """
 GeoSupply AI — BaseSubAgent
-FA v1 | Part III | Layer 4
+FA v2 | Part III | Layer 4
 
 SubAgents compose workers into directed pipelines.
 FA v1 G1: Added setup()/teardown() lifecycle hooks.

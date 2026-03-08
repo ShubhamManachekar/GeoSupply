@@ -1,6 +1,6 @@
 """
 LoggingAgent — Infrastructure Singleton (#1)
-FA v1 | Part IV Group A | Layer 3
+FA v2 | Part IV Group A | Layer 3
 
 Contract: log(event, *, cost_inr, trace_id, severity) → SQLite swarm_logs
 Subscribes to EventBus for automatic event logging.

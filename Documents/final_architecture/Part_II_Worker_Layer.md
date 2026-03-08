@@ -1,5 +1,5 @@
-# Part II: Worker Layer — BaseWorker + 40 Workers
-## FA v1 | Gap Mitigations: G1, G9 applied
+# Part II: Worker Layer — BaseWorker + 45 Workers
+## FA v2 | Gap Mitigations: G1, G9 applied | World Monitor Integration
 
 ## 2.1 BaseWorker Class (All Workers Inherit This)
 
@@ -76,7 +76,7 @@ class WorkerError(BaseModel):
 
 ---
 
-## 2.2 Complete Worker Inventory (40 Workers)
+## 2.2 Complete Worker Inventory (45 Workers)
 
 ### Ingestion Workers (4)
 
@@ -150,7 +150,7 @@ class WorkerError(BaseModel):
 | 31 | **StreamlitWorker** | 0 | No | DASHBOARD_RENDER, PAGE_GEN |
 | 32 | **CIVisualisationWorker** | 0 | No | CHART_GEN, MAP_RENDER |
 
-### v10 New Workers (8)
+### v10+ New Workers (9)
 
 | # | Worker | Tier | STATIC | Capabilities | Fixes |
 |---|--------|------|--------|-------------|-------|
@@ -162,6 +162,16 @@ class WorkerError(BaseModel):
 | 38 | **SBOMWorker** | 0 | No | SBOM_GENERATE, SBOM_AUDIT | Tech Team |
 | 39 | **BackupWorker** | 0 | No | BACKUP_RUN, BACKUP_RESTORE | v9 BLIND SPOT 4 |
 | 40 | **LoopholeDetectionWorker** | 0 | No | LOOPHOLE_CHECK, SYSTEM_PROBE | v10 LoopholeHunter |
+| 41 | **EventExtractorWorker** | 2 | No | EVENT_EXTRACT, NEWS_TAGGING | Event Generation |
+
+### FA v2 New Workers (4) — World Monitor Integration
+
+| # | Worker | Tier | STATIC | Capabilities | Source APIs |
+|---|--------|------|--------|-------------|-------------|
+| 42 | **DisasterWorker** | 0 | No | DISASTER_INGEST, QUAKE_TRACK, STORM_TRACK | USGS, NASA EONET, GDACS |
+| 43 | **AviationWorker** | 0 | No | AIRCRAFT_TRACK, MILITARY_CLASSIFY | OpenSky Network, Wingbits |
+| 44 | **EnergyWorker** | 0 | No | ENERGY_INGEST, OIL_ANALYTICS, PIPELINE_MONITOR | EIA |
+| 45 | **MarketWorker** | 0 | No | MARKET_INGEST, STOCK_QUOTE, CRYPTO_PRICE | Finnhub, Yahoo Finance, CoinGecko |
 
 ---
 
@@ -190,7 +200,7 @@ INPUT GUARD (v10):
 
 ## CROSS-CHECK ✅
 ```
-✓ 40 workers listed (32 v8 + 8 v10)
+✓ 45 workers listed (32 v8 + 9 v10 + 4 FA v2)
 ✓ All STATIC workers identified (9)
 ✓ All workers have tier, capabilities, and STATIC flag
 ✓ All v10 workers map to specific loophole/gap fixes

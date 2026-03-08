@@ -1,1 +1,1 @@
-"""GeoSupply AI — Supervisors package. 14 supervisors (Phase 8)."""
+"""GeoSupply AI — Supervisors package scaffold (no concrete implementations yet)."""

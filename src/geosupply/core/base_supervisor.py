@@ -1,6 +1,6 @@
 """
 GeoSupply AI — BaseSupervisor
-FA v1 | Part V | Layer 2
+FA v2 | Part V | Layer 2
 
 Supervisors enforce budgets, priorities, and phase gates.
 They schedule agent work and manage backpressure.

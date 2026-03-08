@@ -8,7 +8,7 @@ Copy and modify for each new worker. All workers follow this exact pattern.
 ```python
 """
 [WorkerName] — [one-line description]
-Part of: GeoSupply AI FA v1
+Part of: GeoSupply AI FA v2
 Layer: 5 (Worker)
 Phase: [build phase number]
 """

@@ -1,13 +1,20 @@
 ---
 name: geosupply-dev
-description: GeoSupply AI development conventions, architecture rules, and code generation templates for FA v1
+description: GeoSupply AI development conventions, architecture rules, and code generation templates aligned to FA v3 canonical docs and current implementation state.
 ---
 
 # GeoSupply AI Development Skill
 
 ## Architecture Context
 
-GeoSupply AI is an India-centric geopolitical supply chain intelligence platform using a multi-agent swarm (FA v1, ~137 components). Read `f:\GeoSupply\Documents\DEVELOPMENT_TRAIL.md` for full context.
+GeoSupply AI is an India-centric geopolitical supply chain intelligence platform with FA v3 documentation governance. Use `Documents/fa_v3_architecture/actual_state/` for implementation truth and `Documents/fa_v3_architecture/target_state/` for intended architecture.
+
+## Current Baseline (Restructured)
+
+- Implemented: 6 workers, 8 agents.
+- Manager-agent control plane slice exists at Layer 3: `SwarmManagerAgent`, `MoERouterAgent`, `BudgetManagerAgent`, `RouteManagerAgent`.
+- Not implemented yet: concrete subagents, supervisors, and orchestrator execution classes.
+- Dynamic audit is the source of count truth: `python -m geosupply.cli.audit --level strict`.
 
 ## Locked Rules (NEVER Override)
 
@@ -21,6 +28,14 @@ GeoSupply AI is an India-centric geopolitical supply chain intelligence platform
 8. **All costs in INR** — never USD
 9. **TRUST NOTHING** — validate every data flow
 10. **Every agent has a watchdog**
+16. **ZERO MOCKS** — All tests must exercise REAL logic, NEVER use placeholder/mock/fake logic
+17. Run phase-end audits BEFORE closing any phase gate
+18. NEVER hardcode component counts — use dynamic discovery
+19. Every new Worker/Agent must be discoverable by the audit system automatically
+20. Every schema added to ALL_SCHEMAS MUST have a matching SCHEMA_VERSIONS entry
+21. BROKEN CHAIN CHECK — all core imports must resolve cleanly
+22. LOGIC LOOPHOLE CHECK — `process()` overriden, valid MRO
+24. PRACTICAL GATE — Full pytest suite must pass during audit
 
 ## Code Conventions
 
@@ -76,6 +91,8 @@ When creating any new module:
 10. [ ] Docstring with class purpose and data flow
 11. [ ] All datetime calls use `datetime.now(timezone.utc)` — never `utcnow()`
 12. [ ] Agent `execute()` handles unknown actions with error dict
+13. [ ] If `__init__()` is overridden, call `super().__init__()` for forward compatibility
+14. [ ] Control-plane agents must defensively parse malformed payload fields (no uncaught `TypeError`/`ValueError`)
 
 ## Testing Rules (Learned from Phase 1)
 
@@ -130,7 +147,7 @@ After completing any phase, run these checks:
 | G1 | SubAgent lifecycle hooks missing | `base_subagent.py` — `setup()`, `teardown()` |
 | G2 | Agent state Machine has no guards | `base_agent.py` — `VALID_STATE_TRANSITIONS` |
 | G3 | EventBus messages unsigned | `event_bus.py` — HMAC-SHA256 signing |
-| G4 | Schema versioning undefined | `schemas.py` — `schema_version=1` on all 23 |
+| G4 | Schema versioning undefined | `schemas.py` — `schema_version=1` on all 25 |
 | G5 | KG dedup key missing | `schemas.py` — `KnowledgeUpdateRequest.dedup_key` |
 | G6 | Channel fingerprint baseline timing | `schemas.py` — `ChannelFingerprint.status` Literals |
 | G7 | WebSocket JWT scopes undefined | `config.py` — `WS_JWT_SCOPES` |

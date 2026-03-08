@@ -1,6 +1,6 @@
 """
 GeoSupply AI — BaseWorker
-FA v1 | Part II | Layer 5
+FA v2 | Part II | Layer 5
 
 Every worker inherits from BaseWorker.
 Provides lifecycle hooks, auto-instrumentation stubs,
@@ -12,7 +12,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 
 from geosupply.schemas import WorkerError
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class BaseWorker(ABC):
     """
-    Abstract base for all 40 workers.
+    Abstract base for all 45 workers (FA v2 census).
 
     LIFECYCLE:
         __init__()    → register capabilities + set retry policy

@@ -1,1 +1,1 @@
-"""GeoSupply AI — SubAgents package. 13 subagents (Phase 6)."""
+"""GeoSupply AI — Subagents package scaffold (no concrete implementations yet)."""

@@ -1,6 +1,6 @@
 """
 GeoSupply AI — Central Configuration
-FA v1 | All constants, thresholds, and locked values.
+FA v2 | All constants, thresholds, and locked values.
 NEVER import API keys directly — use SecurityAgent.get_key()
 """
 
@@ -195,6 +195,10 @@ SCHEMA_VERSIONS: dict[str, dict[str, int]] = {
     "CostProjection": {"current": 1, "min_supported": 1},
     "Event": {"current": 1, "min_supported": 1},
     "WorkerError": {"current": 1, "min_supported": 1},
+    "GeoEventRecord": {"current": 1, "min_supported": 1},
+    "GeoEventTimeline": {"current": 1, "min_supported": 1},
+    # Phase 2 workers don't define new schemas (Tier 0 raw output)
+    # Phase 15 schemas (#26-28): DisasterEvent, AviationTrack, MarketSignal
 }
 
 # ============================================================

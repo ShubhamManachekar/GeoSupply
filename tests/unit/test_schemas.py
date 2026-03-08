@@ -15,8 +15,8 @@ from geosupply.schemas import (
 
 
 class TestSchemaCount:
-    def test_23_schemas_registered(self):
-        assert len(ALL_SCHEMAS) == 23
+    def test_25_schemas_registered(self):
+        assert len(ALL_SCHEMAS) == 25
 
 
 class TestSchemaVersion:

@@ -1,6 +1,6 @@
 """
 GeoSupply AI — Decorators
-FA v1 | Auto-instrumentation for workers, agents, and subagents.
+FA v2 | Auto-instrumentation for workers, agents, and subagents.
 
 These are stub implementations for Phase 0.
 Full implementations will be built in Phase 1 with real logging/metrics.

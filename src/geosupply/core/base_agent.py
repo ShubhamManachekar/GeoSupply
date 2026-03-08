@@ -1,6 +1,6 @@
 """
 GeoSupply AI — BaseAgent
-FA v1 | Part IV | Layer 3
+FA v2 | Part IV | Layer 3
 
 Agents own a domain, manage worker/subagent pools, and advertise capabilities.
 FA v1 G2: Explicit state machine with transition guards.

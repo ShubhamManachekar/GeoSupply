@@ -1,5 +1,5 @@
 """
-GeoSupply AI — Shared Test Fixtures (FA v1 G10)
+GeoSupply AI — Shared Test Fixtures (FA v2)
 Test configuration and common fixtures.
 """
 

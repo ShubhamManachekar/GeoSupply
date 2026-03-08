@@ -1,6 +1,8 @@
 # GeoSupply AI v10.0 — Hardened Architecture
 ## "Find every loophole. Fix every gap. Trust nothing."
 
+> Legacy Notice: `v10_architecture/` is reference design context. Use `Documents/fa_v3_architecture/` as the canonical architecture source.
+
 ---
 
 ## v9 → v10 Upgrade Summary

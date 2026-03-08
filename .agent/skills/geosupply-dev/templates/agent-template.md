@@ -5,7 +5,7 @@
 ```python
 """
 [AgentName] — [one-line description]
-Part of: GeoSupply AI FA v1
+Part of: GeoSupply AI FA v2
 Layer: 3 (Agent)
 Group: [A-G] — [Group name]
 Phase: [build phase number]

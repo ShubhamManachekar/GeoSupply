@@ -1,6 +1,6 @@
 """
 InputSanitiserWorker — Worker #34
-FA v1 | Part II | Layer 5
+FA v2 | Part II | Layer 5
 
 Capabilities: SANITISE_INPUT, INJECTION_SCAN
 Fixes: v9 LOOPHOLE 2 (STATIC decoder prompt length bypass)

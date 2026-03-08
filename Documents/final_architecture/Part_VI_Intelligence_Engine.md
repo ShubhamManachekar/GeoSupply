@@ -106,6 +106,22 @@ class PredictionAgent(BaseAgent):
     """
 ```
 
+
+### Pillar 4: Event Chronology (TimelineGeneratorAgent)
+
+```python
+class TimelineGeneratorAgent(BaseAgent):
+    """
+    Parses GeoEventRecords from EventExtractorWorker to build chronological
+    and spatial event graphs. Identifies hidden trends.
+
+    INPUT: GeoEventRecord (WAR, CALAMITY, POLITICAL_SHIFT, etc.)
+    OUTPUT: GeoEventTimeline with nodes and identified_trend
+    
+    Trends identified can feed into Predictive Intelligence.
+    """
+```
+
 ---
 
 ## 6.2 Cyber Threat Intelligence — Dual Mission
