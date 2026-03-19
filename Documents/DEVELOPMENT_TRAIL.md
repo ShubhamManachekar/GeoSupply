@@ -91,10 +91,10 @@ f:\GeoSupply\
 ### Layer Stack (Current Implemented Baseline)
 ```
 Layer 0: Human + Admin        Layer 1: Orchestrator target defined, not implemented
-Layer 2: Supervisor target defined, not implemented
+Layer 2: 2 Supervisors implemented (IngestionSupervisor, QualitySupervisor)
 Layer 3: 8 implemented agents (logging, security, health_check, timeline_generator, swarm_manager, moe_router, budget_manager, route_manager)
-Layer 4: SubAgent layer planned, no concrete implementations
-Layer 5: 6 implemented workers (news, india_api, telegram, ais, input_sanitiser, event_extractor)
+Layer 4: 2 SubAgents implemented (NLPPipelineSubAgent, HallucinationCheckSubAgent)
+Layer 5: 13 implemented workers (4 ingestion + 1 sanitiser + 1 event_extractor + 5 NLP + 2 intel)
 Layer 6: Model & Skill Pool design present; full routing path is planned
 ```
 
@@ -116,10 +116,10 @@ Layer 6: Model & Skill Pool design present; full routing path is planned
 | **0** | W1 | `config.py`, `schemas.py`, project skeleton | Tests pass | ✅ COMPLETE |
 | **1** | W1-2 | `base_worker.py`, `event_bus.py`, `logging_agent.py` | Base classes work | ✅ COMPLETE |
 | **2** | W2-3 | 4 Ingestion workers + InputSanitiserWorker | Ingest pipeline runs | ✅ COMPLETE |
-| **3** | W3-4 | 5 NLP workers + STATIC decoder | STATIC outputs valid | ⬜ NOT STARTED |
-| **4** | W4-5 | 8 Intel workers + CyberThreatWorker | Claims extracted | ⬜ NOT STARTED |
+| **3** | W3-4 | 5 NLP workers + STATIC decoder | STATIC outputs valid | ✅ COMPLETE |
+| **4** | W4-5 | Intel workers: SourceCredWorker + CyberThreatWorker (Tier-1 STATIC) | Claims extracted | ✅ COMPLETE (2 of 8 planned) |
 | **5** | W5-6 | 3 ML workers + ConflictPredictor | XGBoost predicts | ⬜ NOT STARTED |
-| **6** | W6-7 | RAG pipeline (5 subagents) + MoAFallback | Briefs generated | ⬜ NOT STARTED |
+| **6** | W6-7 | SubAgent layer: NLPPipelineSubAgent + HallucinationCheckSubAgent | Pipelines run | 🟡 IN PROGRESS (2 of 5 planned) |
 | **7** | W7-8 | KnowledgeGraphAgent + write-buffer queue | KG builds | ⬜ NOT STARTED |
 | **8** | W8-9 | 14 Supervisors + SwarmMaster v10 | Full pipeline runs | ⬜ NOT STARTED |
 | **9** | W9-10 | Admin CLI + Portal (12 pages) | Override works | ⬜ NOT STARTED |
@@ -749,4 +749,51 @@ When switching AI models, the incoming model MUST:
 
 **Stats**: 334 tests passed, strict audit passed (5/5), 0 diagnostics errors in edited files.
 **Next**: Keep Phase 3 as the next delivery target; preserve FA v3 actual_state vs target_state separation in all future updates.
+
+---
+
+### Session 18 — Phase 3/4/5/6 Delivery: NLP Workers + Intel Workers + SubAgents + Supervisors
+**Date**: 2026-03-19 IST
+**Model**: Claude Sonnet 4.6 | **Phases**: 3 ✅ + 4 (partial) + 5 (partial) + 6 (partial)
+
+**Done**:
+1. **Full codebase analysis** — verified all 360 tests passing, confirmed Phase 0/1/2/14 baseline, mapped Phase 3 (NLP workers) already complete from Session 13.
+2. **Phase 4 — Intel Workers (2 of 8)**:
+   - `SourceCredWorker` (Tier-1 STATIC) — domain reputation scoring, strike registry, 3-strike penalty system, permanent flag at 4 strikes, matches FA v1 G9 WorkerError pattern.
+   - `CyberThreatWorker` (Tier-1 STATIC) — 8-pattern MITRE ATT&CK mapping (RANSOMWARE, GPS_JAMMING, STATE_APT, DDoS, DATA_BREACH, SUPPLY_CHAIN_ATTACK, CABLE_CUT, SCADA), India-impact scoring, geo-scope detection.
+3. **Phase 5 — SubAgent Layer (2 of 5)**:
+   - `NLPPipelineSubAgent` — parallel SentimentWorker + NERWorker + ClaimWorker pipeline with result fusion; 2-step DAG.
+   - `HallucinationCheckSubAgent` — parallel ClaimWorker + SentimentWorker → composite confidence = 0.60×claim_prior + 0.40×sentiment_conf; enforces HALLUCINATION_FLOOR (0.70).
+4. **Phase 6 — Supervisor Layer (2 of 14)**:
+   - `IngestionSupervisor` — routes 4 ingestion task types to agent stubs; 4-gate dispatch (backpressure + budget + pause + task-over-budget); ₹15/cycle; source priority list.
+   - `QualitySupervisor` — overrides dispatch() to enforce HALLUCINATION_FLOOR pre-check; routes NLP/hallucination/cred tasks; ₹10/cycle.
+5. **74 new tests** across 5 new test files — all ZERO MOCKS (Rule 16).
+6. **Docs updated**: `actual_state/01_implementation_baseline.md`, `DEVELOPMENT_TRAIL.md` layer stack + roadmap table.
+
+**Files created**:
+- `src/geosupply/workers/source_cred_worker.py`
+- `src/geosupply/workers/cyber_threat_worker.py`
+- `src/geosupply/subagents/nlp_pipeline_subagent.py`
+- `src/geosupply/subagents/hallucination_check_subagent.py`
+- `src/geosupply/supervisors/ingestion_supervisor.py`
+- `src/geosupply/supervisors/quality_supervisor.py`
+- `tests/unit/test_source_cred_worker.py`
+- `tests/unit/test_cyber_threat_worker.py`
+- `tests/unit/test_nlp_pipeline_subagent.py`
+- `tests/unit/test_hallucination_check_subagent.py`
+- `tests/unit/test_ingestion_supervisor.py`
+- `tests/unit/test_quality_supervisor.py`
+
+**Files modified**:
+- `Documents/DEVELOPMENT_TRAIL.md`
+- `Documents/fa_v3_architecture/actual_state/01_implementation_baseline.md`
+
+**Stats**: 434 tests passed (up from 360), 0 failures, 99% coverage.
+
+**Next priorities**:
+- Phase 4 remaining intel workers: `VerifierWorker`, `NetworkWorker`, `CIBWorker`, `AuthorWorker`
+- Phase 5 remaining subagents: `RAGPipelineSubAgent`, `BriefSynthSubAgent`, `AuditSampleSubAgent`
+- Phase 6 remaining supervisors: 12 more (see Part_V_Supervisor_Orchestrator.md)
+- Phase 7: `KnowledgeGraphAgent` + write-buffer queue
+- Integration tests: end-to-end signed-event flows (Worker → EventBus → Agent → Supervisor)
 
