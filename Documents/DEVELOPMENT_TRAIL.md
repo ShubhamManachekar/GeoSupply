@@ -13,8 +13,11 @@ ARCHITECTURE:   FA v3 (canonical docs), with FA v2/v10/v9 retained as reference 
 LANGUAGE:       Python 3.10+, async/await, Pydantic v2, type hints everywhere
 BUDGET CAP:     ₹500/month (LOCKED — all costs in INR, never USD)
 HALLUCINATION:  FLOOR = 0.70 (LOCKED — never lower)
-STATUS:         Implemented baseline = Phase 0 + 1 + 2 + 14 complete; extra implemented: EventExtractorWorker, TimelineGeneratorAgent, SwarmManagerAgent, MoERouterAgent, BudgetManagerAgent, RouteManagerAgent (manager-tier hardened + validated)
-DOCS LOCATION:  f:\GeoSupply\Documents\fa_v3_architecture\
+STATUS:         Session 21 | Workers:21 | Agents:11 | SubAgents:7 | Supervisors:4/14 | Tests:674
+                Gap fixes: WatchdogSubAgent(Rule10), InputSanitiser wired(NLP), G3 BaseAgent.handle_event,
+                           KG SQLite persistence, FactCheckAgent, SourceClusterSubAgent, SummarizationAuditAgent
+                Next P0:   InfraSupervisor (watchdog consumer), SwarmMaster.decompose()+DAG routing
+DOCS LOCATION:  Documents/fa_v3_architecture/ (actual_state + target_state + governance)
 ```
 
 ---
@@ -88,15 +91,38 @@ f:\GeoSupply\
 
 ## 🏗️ Architecture Quick Reference
 
-### Layer Stack (Current Implemented Baseline)
+### Layer Stack (Current Implemented Baseline — Session 21)
 ```
-Layer 0: Human + Admin        Layer 1: Orchestrator target defined, not implemented
-Layer 2: 2 Supervisors implemented (IngestionSupervisor, QualitySupervisor)
-Layer 3: 8 implemented agents (logging, security, health_check, timeline_generator, swarm_manager, moe_router, budget_manager, route_manager)
-Layer 4: 2 SubAgents implemented (NLPPipelineSubAgent, HallucinationCheckSubAgent)
-Layer 5: 13 implemented workers (4 ingestion + 1 sanitiser + 1 event_extractor + 5 NLP + 2 intel)
+Layer 0: Human + Admin
+Layer 1: SwarmManagerAgent (round-robin lane split); decompose()+DAG routing NOT YET IMPLEMENTED
+Layer 2: 4/14 Supervisors (Ingestion, Quality, NLP+InputSanitiser gate, Intel)
+Layer 3: 11 Agents (logging, security, health_check, timeline, swarm, moe, budget, route,
+                     knowledge_graph+SQLite, fact_check, summarization_audit)
+Layer 4: 7/13 SubAgents (NLPPipeline, HallucinationCheck, AuditSample, SourceFeedback,
+                          RAGPipeline, WatchdogSubAgent, SourceClusterSubAgent)
+Layer 5: 21 Workers (4 ingestion + 1 sanitiser + 1 event + 5 NLP + 8 intel + claim)
 Layer 6: Model & Skill Pool design present; full routing path is planned
 ```
+
+### Remaining P0 Items (Blocking end-to-end pipeline)
+```
+1. InfraSupervisor       → subscribes watchdog.alert; restarts STUCK agents; CANNOT be paused
+2. SwarmMaster.decompose() → TaskPacket DAG routing; SUPPLY_BRIEF decomposition template
+   + ROUTING_TABLE 50+ entries; execute_dag() with topological sort
+```
+
+### Remaining P1 Items
+```
+3. GraphRAGSubAgent      → KG entity traversal + ChromaDB hybrid retrieval
+4. BriefSynthSubAgent    → 3-proposer MoA + 4-level fallback (SQLite proposal audit)
+```
+
+### Remaining P2 Items
+```
+5. SemanticDriftMonitor  → KL divergence on source embeddings; WARN/SUSPEND/SILENT alerts
+```
+
+Full designs: Documents/fa_v3_architecture/target_state/09_component_design_backlog.md
 
 ### 10 Locked Principles
 ```
@@ -117,11 +143,11 @@ Layer 6: Model & Skill Pool design present; full routing path is planned
 | **1** | W1-2 | `base_worker.py`, `event_bus.py`, `logging_agent.py` | Base classes work | ✅ COMPLETE |
 | **2** | W2-3 | 4 Ingestion workers + InputSanitiserWorker | Ingest pipeline runs | ✅ COMPLETE |
 | **3** | W3-4 | 5 NLP workers + STATIC decoder | STATIC outputs valid | ✅ COMPLETE |
-| **4** | W4-5 | Intel workers: SourceCredWorker + CyberThreatWorker (Tier-1 STATIC) | Claims extracted | ✅ COMPLETE (2 of 8 planned) |
+| **4** | W4-5 | Intel workers (all 8: SourceCred, CyberThreat, Supplier, Sanctions, Network, CIB, Verifier, Author) | Claims extracted | ✅ COMPLETE (8/8) |
 | **5** | W5-6 | 3 ML workers + ConflictPredictor | XGBoost predicts | ⬜ NOT STARTED |
-| **6** | W6-7 | SubAgent layer: NLPPipelineSubAgent + HallucinationCheckSubAgent | Pipelines run | 🟡 IN PROGRESS (2 of 5 planned) |
-| **7** | W7-8 | KnowledgeGraphAgent + write-buffer queue | KG builds | ⬜ NOT STARTED |
-| **8** | W8-9 | 14 Supervisors + SwarmMaster v10 | Full pipeline runs | ⬜ NOT STARTED |
+| **6** | W6-7 | SubAgent layer (7/13: +WatchdogSubAgent, +SourceClusterSubAgent Session 21) | Pipelines run | 🟡 IN PROGRESS (7/13) |
+| **7** | W7-8 | KnowledgeGraphAgent + write-buffer + SQLite persistence | KG builds | 🟡 IN PROGRESS (NetworkX/ChromaDB planned) |
+| **8** | W8-9 | 14 Supervisors + SwarmMaster.decompose() + DAG routing | Full pipeline runs | 🟡 IN PROGRESS (4/14 supervisors; no DAG yet) |
 | **9** | W9-10 | Admin CLI + Portal (12 pages) | Override works | ⬜ NOT STARTED |
 | **10** | W10-11 | Marketing agents + Twitter + Newsletter | Tweets publish | ⬜ NOT STARTED |
 | **11** | W11-12 | LoopholeHunter + PenTest + Security | 24 checks pass | ⬜ NOT STARTED |
@@ -132,7 +158,9 @@ Layer 6: Model & Skill Pool design present; full routing path is planned
 
 **Legend**: ⬜ NOT STARTED | 🟡 IN PROGRESS | ✅ COMPLETE | ❌ BLOCKED
 
-**Note**: Current implemented baseline also includes `EventExtractorWorker`, `TimelineGeneratorAgent`, `SwarmManagerAgent`, `MoERouterAgent`, `BudgetManagerAgent`, and `RouteManagerAgent` outside the original phase table rows.
+**Note**: Current implemented baseline also includes `EventExtractorWorker`, `TimelineGeneratorAgent`, `SwarmManagerAgent`, `MoERouterAgent`, `BudgetManagerAgent`, `RouteManagerAgent`, `FactCheckAgent`, `SummarizationAuditAgent`, `WatchdogSubAgent`, `SourceClusterSubAgent` outside original phase table rows.
+
+**Session 21 Gap Fixes**: Rule 10 (WatchdogSubAgent), InputSanitiser wired (NLPSupervisor), G3 BaseAgent.handle_event(), KG SQLite persistence, FactCheckAgent, SourceClusterSubAgent, SummarizationAuditAgent. Tests: 596 → 674. Schemas: 27 → 29.
 
 ---
 
