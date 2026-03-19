@@ -13,7 +13,12 @@ FA v2 Part V §5.2 — Supervisor #7:
 
 ### Contract
 - **Input task types**: INFRA_HEALTH, INFRA_LOG, INFRA_WATCHDOG, INFRA_RESTART, KG_CANARY, SCHEMA_MIGRATE, INPUT_SANITISE
-- **Managed agents**: HealthCheckAgent, LoggingAgent, SecurityAgent, WatchdogSubAgent (proxy), BudgetManagerAgent, RouteManagerAgent, MoERouterAgent, SwarmManagerAgent, KnowledgeGraphAgent
+- **Managed agents (from FA v2 Part V + v9_architecture/06_supervisor_layer.md)**:
+  - LoggingAgent, HealthCheckAgent, SecurityAgent (infrastructure singletons)
+  - FactCheckAgent (quality gate singleton)
+  - BudgetManagerAgent, RouteManagerAgent, MoERouterAgent, SwarmManagerAgent (control plane)
+  - KnowledgeGraphAgent (Phase 7 singleton)
+- **Note**: v9_architecture spec lists: LoggingAgent, FactCheckAgent, HealthCheckAgent, SecurityAgent, AuditorAgent, SourceFeedbackAgent as the InfraSupervisor's core 6. The full 9-singleton set follows FA v2 Part V.
 - **Budget**: ₹2/cycle (infra agents are Tier-0, CPU-only, near-zero cost)
 - **Key gates**:
   - CANNOT be paused (same rule as DisasterRecoverySupervisor)
