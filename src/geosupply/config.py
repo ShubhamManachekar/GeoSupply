@@ -200,8 +200,10 @@ SCHEMA_VERSIONS: dict[str, dict[str, int]] = {
     # Phase 4/Tier-3 schemas (#26-27)
     "VerificationResult": {"current": 1, "min_supported": 1},
     "AuthorProfile": {"current": 1, "min_supported": 1},
-    # Phase 2 workers don't define new schemas (Tier 0 raw output)
-    # Phase 15 schemas (#28-30): DisasterEvent, AviationTrack, MarketSignal
+    # Phase 6+ schemas (#28-29)
+    "WatchdogAlert": {"current": 1, "min_supported": 1},
+    "FactCheckResult": {"current": 1, "min_supported": 1},
+    # Phase 15 schemas (#30-32): DisasterEvent, AviationTrack, MarketSignal
 }
 
 # ============================================================

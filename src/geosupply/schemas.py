@@ -438,3 +438,37 @@ class AuthorProfile(BaseModel):
 # Register new schemas
 ALL_SCHEMAS["VerificationResult"] = VerificationResult
 ALL_SCHEMAS["AuthorProfile"] = AuthorProfile
+
+
+# ============================================================
+# Schema #28: WatchdogAlert
+# Used by: WatchdogSubAgent (Rule 10 — every agent has a watchdog)
+# ============================================================
+class WatchdogAlert(BaseModel):
+    schema_version: int = 1
+    agent_name: str
+    alert_type: Literal["STUCK_BUSY", "STUCK_ERROR", "UNREACHABLE", "RECOVERED"]
+    state_at_alert: str
+    stuck_duration_s: float = 0.0
+    trace_id: str = ""
+    occurred_at: datetime = Field(default_factory=_utcnow)
+
+
+# ============================================================
+# Schema #29: FactCheckResult
+# Used by: FactCheckAgent (Layer 3)
+# ============================================================
+class FactCheckResult(BaseModel):
+    schema_version: int = 1
+    claim_text: str
+    verdict: Literal["PASS", "FAIL", "UNVERIFIABLE", "QUARANTINE"]
+    confidence: float = Field(ge=0.0, le=1.0)
+    evidence_count: int = 0
+    hallucination_score: float = Field(ge=0.0, le=1.0, default=0.0)
+    sources_checked: list[str] = Field(default_factory=list)
+    trace_id: str = ""
+    checked_at: datetime = Field(default_factory=_utcnow)
+
+
+ALL_SCHEMAS["WatchdogAlert"] = WatchdogAlert
+ALL_SCHEMAS["FactCheckResult"] = FactCheckResult

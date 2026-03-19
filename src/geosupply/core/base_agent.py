@@ -11,8 +11,13 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from geosupply.config import AgentState, VALID_STATE_TRANSITIONS
+
+if TYPE_CHECKING:
+    from geosupply.schemas import Event
+    from geosupply.core.event_bus import EventBus
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +128,32 @@ class BaseAgent(ABC):
                 "state": self._state.value,
             },
         }
+
+    async def handle_event(
+        self,
+        event: "Event",
+        event_bus: "EventBus | None" = None,
+    ) -> None:
+        """
+        Process an inbound EventBus event.
+
+        FA v1 G3: If event_bus is provided, verifies HMAC-SHA256 signature
+        before dispatching. Events with invalid signatures are silently dropped
+        and logged as SECURITY_EVENT.
+
+        Subclasses override _on_event() for topic-specific handling.
+        """
+        if event_bus is not None and not event_bus.verify_event(event):
+            logger.warning(
+                "SECURITY_EVENT: %s rejected event from '%s' on topic '%s' "
+                "— invalid HMAC signature",
+                self.name, event.source, event.topic,
+            )
+            return
+        await self._on_event(event)
+
+    async def _on_event(self, event: "Event") -> None:
+        """Override in subclasses to handle specific EventBus topics."""
 
     def __repr__(self) -> str:
         return (

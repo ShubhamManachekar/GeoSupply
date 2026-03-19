@@ -7,18 +7,30 @@ description: Phase gate audit procedures for GeoSupply — connectivity checks, 
 
 > Custom GeoSupply skill — run BEFORE closing any development phase
 
-## Current Phase Status (2026-03-19 Session 20)
+## Current Phase Status (2026-03-19 Session 21)
 | Phase | Status | Tests | Notes |
 |-------|--------|-------|-------|
-| 0 | ✅ COMPLETE | — | config, schemas, base classes |
-| 1 | ✅ COMPLETE | — | infra agents |
-| 2 | ✅ COMPLETE | — | 4 ingestion workers |
+| 0 | ✅ COMPLETE | — | config, 29 schemas, base classes |
+| 1 | ✅ COMPLETE | — | 9 infra/core agents |
+| 2 | ✅ COMPLETE | — | 4 ingestion workers + InputSanitiser |
 | 3 | ✅ COMPLETE | — | 5 NLP workers |
-| 4 | ✅ COMPLETE | 596 pass | 8/8 intel workers (Verifier+Author added) |
-| 5 | ✅ COMPLETE | 596 pass | 5/5 subagents (RAGPipelineSubAgent added) |
-| 6 | 🟡 PARTIAL | 596 pass | 4/14 supervisors (NLP+Intel added) |
-| 7 | 🟡 PARTIAL | 596 pass | KGAgent in-memory; NetworkX/ChromaDB planned |
+| 4 | ✅ COMPLETE | 674 pass | 8/8 intel workers |
+| 5 | ✅ COMPLETE | 674 pass | 7/7 subagents (Watchdog + SourceCluster added) |
+| 6 | 🟡 PARTIAL | 674 pass | 4/14 supervisors; NLPSupervisor has InputSanitiser gate |
+| 7 | 🟡 PARTIAL | 674 pass | KGAgent now has SQLite persistence; NetworkX planned |
+| Quality | 🟡 PARTIAL | 674 pass | FactCheckAgent + SummarizationAuditAgent added; QualitySupervisor needs wiring |
 | 14 | ✅ COMPLETE | — | audit tooling |
+
+## Gap Status (Session 21)
+| Gap | Before | After |
+|-----|--------|-------|
+| Rule 10 — Watchdog | ❌ No watchdog | ✅ WatchdogSubAgent polls all agents |
+| InputSanitiser not wired | ❌ Raw text to Tier-1 | ✅ NLPSupervisor pre-gate |
+| G3 half-open | ❌ No receive-side verify | ✅ BaseAgent.handle_event() + EventBus.verify_event() |
+| KG data loss on restart | ❌ In-memory only | ✅ SQLite persist + load on setup |
+| FactCheckAgent missing | ❌ | ✅ Implemented |
+| SourceClusterSubAgent missing | ❌ | ✅ Implemented |
+| SummarizationAuditAgent missing | ❌ | ✅ Implemented |
 
 ## The Golden Rule
 

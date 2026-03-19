@@ -11,9 +11,21 @@ description: Knowledge graph construction, deduplication, NetworkX traversal, Gr
 
 ```
 KnowledgeGraphAgent   ← Owns write authority to KG (Layer 3) [IMPLEMENTED ✅]
-NetworkX in-memory    ← Primary graph store (fast traversal) [planned]
-ChromaDB              ← Vector embeddings for nodes (semantic search) [planned]
-SQLite                ← Edge metadata + event provenance [planned]
+In-memory dict        ← Primary graph store (adjacency dict) [IMPLEMENTED ✅]
+SQLite edge store     ← Edge metadata + dedup keys + provenance [IMPLEMENTED ✅ Session 21]
+ChromaDB              ← Vector embeddings for nodes (planned)
+NetworkX              ← Graph traversal for GraphRAG (planned)
+```
+
+**SQLite persistence (Session 21)**: Pass `db_path=Path(...)` to `KnowledgeGraphAgent.__init__()`, call `await agent.setup()`. On startup, `_load_from_db()` restores all edges. `_persist_edge()` is called on every `_write_triple()`. On `teardown()`, pending buffer is flushed.
+
+```python
+# With persistence:
+agent = KnowledgeGraphAgent(db_path=Path("data/kg.db"))
+await agent.setup()   # loads existing edges from SQLite
+
+# Without persistence (test/in-memory mode):
+agent = KnowledgeGraphAgent()   # no db_path → pure in-memory
 ```
 
 **Single-writer rule**: Only `KnowledgeGraphAgent` writes to the KG. Workers send `KG_ADD_TRIPLE` tasks — the agent batches them (G5 write-buffer, size 50) and deduplicates within a 1-hour sliding window.

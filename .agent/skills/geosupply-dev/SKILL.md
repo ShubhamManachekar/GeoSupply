@@ -9,17 +9,28 @@ description: GeoSupply AI development conventions, architecture rules, and code 
 
 GeoSupply AI is an India-centric geopolitical supply chain intelligence platform with FA v3 documentation governance. Use `Documents/fa_v3_architecture/actual_state/` for implementation truth and `Documents/fa_v3_architecture/target_state/` for intended architecture.
 
-## Current Baseline (Session 20 | 2026-03-19)
+## Current Baseline (Session 21 | 2026-03-19)
 
 | Layer | Component | Count |
 |-------|-----------|-------|
-| Workers | Ingestion (4) + Infra (1) + Event (1) + NLP (5) + Intel (8: SourceCred, CyberThreat, Supplier, Sanctions, Network, CIB, **Verifier**, **Author**) + Claim | **21** |
-| Agents | Logging, Security, HealthCheck, Timeline, Swarm, MoE, Budget, Route, KnowledgeGraph | **9** |
-| SubAgents | NLPPipeline, HallucinationCheck, AuditSample, SourceFeedback, **RAGPipeline** | **5** |
-| Supervisors | Ingestion, Quality, **NLP**, **Intel** | **4** |
+| Workers | Ingestion (4) + Infra (1) + Event (1) + NLP (5) + Intel (8) + Claim + InputSanitiser | **21** |
+| Agents | Logging, Security, HealthCheck, Timeline, Swarm, MoE, Budget, Route, KnowledgeGraph, **FactCheck**, **SummarizationAudit** | **11** |
+| SubAgents | NLPPipeline, HallucinationCheck, AuditSample, SourceFeedback, RAGPipeline, **Watchdog**, **SourceCluster** | **7** |
+| Supervisors | Ingestion, Quality, NLP (+ InputSanitiser pre-gate), Intel | **4** |
 | Orchestrator | Not implemented | 0 |
 
-Tests: **596 passing** (587 unit + 9 integration) | Schemas: **27** (VerificationResult #26, AuthorProfile #27)
+Tests: **674 passing** | Schemas: **29** (WatchdogAlert #28, FactCheckResult #29)
+
+## Gap Fixes Applied (Session 21)
+| Gap | Fix | Location |
+|-----|-----|----------|
+| Rule 10 — no watchdog | `WatchdogSubAgent` polls agent.state, escalates STUCK_BUSY/ERROR/UNREACHABLE | `subagents/watchdog_subagent.py` |
+| InputSanitiserWorker not wired | `NLPSupervisor.dispatch()` runs sanitiser pre-gate on `text` field | `supervisors/nlp_supervisor.py` |
+| G3 half-open | `EventBus.verify_event()` public + `BaseAgent.handle_event(event, event_bus)` | `core/event_bus.py`, `core/base_agent.py` |
+| KG restart data loss | `KnowledgeGraphAgent` SQLite persistence via `setup(db_path)` + `_persist_edge()` + `_load_from_db()` | `agents/knowledge_graph_agent.py` |
+| FactCheckAgent missing | `FactCheckAgent` — FACT_CHECK, CLAIM_VERIFY, EVIDENCE_SCORE, QUARANTINE_BRIEF | `agents/fact_check_agent.py` |
+| SourceClusterSubAgent missing | `SourceClusterSubAgent` — domain/style/penalty clustering | `subagents/source_cluster_subagent.py` |
+| SummarizationAuditAgent missing | `SummarizationAuditAgent` — severity band distortion check | `agents/summarization_audit_agent.py` |
 
 **Test count**: 524 passing, 99% coverage. Integration tests in `tests/integration/`.
 Dynamic audit is the source of count truth: `python -m geosupply.cli.audit --level strict`.
