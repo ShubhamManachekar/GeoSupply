@@ -1,7 +1,7 @@
-# Target State: Component Design Backlog — Session 21 Remaining Items
+# Target State: Component Design Backlog — Session 21 Items (All Implemented in Session 22)
 ## FA v3 | Last Updated: 2026-03-19
 
-> This document gives a complete design spec for each of the 5 remaining high-priority items identified at Session 21 close. Use as the single reference when implementing these items. All specs are grounded in FA v2 architecture (final_architecture/Part_V and Part_III) and the locked principles in `01_fa_v3_principles.md`.
+> This document gives the complete design spec for each of the 5 high-priority items identified at Session 21 close. **All 5 items were implemented in Session 22.** All specs are grounded in FA v2 architecture (final_architecture/Part_V and Part_III) and the locked principles in `01_fa_v3_principles.md`.
 
 ---
 
@@ -399,7 +399,7 @@ no messages in 7 days        → SILENT (alert admin — source may be compromis
 InfraSupervisor ← WatchdogSubAgent (already done)
 GraphRAGSubAgent ← KnowledgeGraphAgent (SQLite done) + ChromaDB
 BriefSynthSubAgent ← GraphRAGSubAgent + SQLite brief store
-SwarmMaster DAG ← All supervisors (currently 4/14)
+SwarmMaster DAG ← All supervisors (currently 5/14)
 SemanticDriftMonitor ← ChannelFingerprint baselines (schema exists)
 ```
 

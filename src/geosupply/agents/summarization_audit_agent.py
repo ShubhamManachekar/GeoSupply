@@ -92,6 +92,7 @@ class SummarizationAuditAgent(BaseAgent):
     max_concurrent = 10
 
     def __init__(self) -> None:
+        super().__init__()
         self._total_audited: int = 0
         self._total_exaggerated: int = 0
 

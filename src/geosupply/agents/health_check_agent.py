@@ -45,6 +45,7 @@ class HealthCheckAgent(BaseAgent):
     _last_check: datetime | None
 
     def __init__(self) -> None:
+        super().__init__()
         self._registered_agents = {}
         self._check_history = []
         self._last_check = None

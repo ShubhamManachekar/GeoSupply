@@ -29,7 +29,7 @@ class InvalidStateTransition(Exception):
 
 class BaseAgent(ABC):
     """
-    Abstract base for all 38 agents.
+    Abstract base for all 39 agents (FA v3 census target).
 
     STATE MACHINE:
         IDLE → BUSY → DONE → IDLE
@@ -42,13 +42,15 @@ class BaseAgent(ABC):
 
     name: str = "BaseAgent"
     domain: str = "default"
-    capabilities: set[str] = set()
     max_concurrent: int = 3
 
-    # --- State Machine (FA v1 G2) ---
-    _state: AgentState = AgentState.IDLE
-    _prev_state: AgentState | None = None
-    _state_changed_at: datetime | None = None
+    def __init__(self) -> None:
+        # Instance-level mutable state (not class-level — prevents cross-instance leakage)
+        self.capabilities: set[str] = set()
+        # --- State Machine (FA v1 G2) ---
+        self._state: AgentState = AgentState.IDLE
+        self._prev_state: AgentState | None = None
+        self._state_changed_at: datetime | None = None
 
     def _transition(self, new_state: AgentState) -> None:
         """

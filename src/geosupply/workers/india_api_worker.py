@@ -19,6 +19,7 @@ from typing import Any
 from urllib.parse import urlencode
 
 from geosupply.core.base_worker import BaseWorker
+from geosupply.core.decorators import breaker
 from geosupply.schemas import WorkerError
 
 logger = logging.getLogger(__name__)
@@ -328,6 +329,7 @@ class IndiaAPIWorker(BaseWorker):
             )
         return []
 
+    @breaker
     async def _fetch_url(self, url: str, trace_id: str) -> dict:
         """Fetch JSON from URL. Separated for testability."""
         try:

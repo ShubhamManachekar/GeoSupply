@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class BaseWorker(ABC):
     """
-    Abstract base for all 45 workers (FA v2 census).
+    Abstract base for all 45 workers (FA v3 census target).
 
     LIFECYCLE:
         __init__()    → register capabilities + set retry policy

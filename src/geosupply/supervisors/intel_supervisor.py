@@ -95,10 +95,14 @@ class IntelSupervisor(BaseSupervisor):
     ]
 
     def __init__(self) -> None:
+        super().__init__()
+        self.agents = [
+            "SupplierAgent", "SanctionsAgent", "SourceCredAgent",
+            "CyberAgent", "VerifierAgent", "AuthorAgent",
+        ]
         self._agent_registry: dict[str, _StubAgent] = {
             agent_name: _StubAgent(agent_name) for agent_name in self.agents
         }
-        self.reset_budget()
 
     def register_agent(self, agent_name: str, agent: object) -> None:
         """Register a real BaseAgent instance (replaces stub at runtime)."""

@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from geosupply.core.base_worker import BaseWorker
+from geosupply.core.decorators import breaker
 from geosupply.schemas import WorkerError
 
 logger = logging.getLogger(__name__)
@@ -222,6 +223,7 @@ class TelegramWorker(BaseWorker):
                 trace_id=trace_id,
             ).model_dump()
 
+    @breaker
     async def _fetch_messages(self, channel_id: str, limit: int, trace_id: str) -> list[dict]:
         """
         Fetch messages from Telegram. Uses telethon/pyrogram in production.

@@ -33,11 +33,15 @@ class BaseSupervisor(ABC):
     domain: str = "default"
     budget_inr: float = 10.0               # Max INR per pipeline cycle
     max_queue_depth: int = SUPERVISOR_MAX_QUEUE_DEPTH
-    agents: list[str] = []                 # Agent names managed
 
-    _budget_remaining: float = 0.0
-    _queue: deque = deque()
-    _is_paused: bool = False
+    def __init__(self) -> None:
+        # Instance-level mutable state (not class-level — prevents cross-instance leakage)
+        self.agents: list[str] = []
+        self._budget_remaining: float = 0.0
+        self._queue: deque = deque()
+        self._is_paused: bool = False
+        # Auto-initialize budget for first cycle
+        self.reset_budget()
 
     def reset_budget(self) -> None:
         """Reset budget for new pipeline cycle."""

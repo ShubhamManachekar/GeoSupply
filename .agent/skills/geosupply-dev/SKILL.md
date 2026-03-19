@@ -96,7 +96,7 @@ Dynamic audit is the source of count truth: `python -m geosupply.cli.audit --lev
 # Every process() must track cost_inr in meta
 ```
 
-## Architecture Design References (Session 21 — Next Items)
+## Architecture Design References (Implemented in Session 22)
 
 ### SwarmMaster ROUTING_TABLE (MVP subset)
 ```python

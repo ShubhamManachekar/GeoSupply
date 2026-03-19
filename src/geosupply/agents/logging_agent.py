@@ -84,6 +84,7 @@ class LoggingAgent(BaseAgent):
     _total_cost_inr: float = 0.0
 
     def __init__(self, db_path: Path | None = None, min_severity: Severity = Severity.DEBUG):
+        super().__init__()
         self._db_path = db_path or SQLITE_PATH
         self._min_severity = min_severity
         self._conn = None

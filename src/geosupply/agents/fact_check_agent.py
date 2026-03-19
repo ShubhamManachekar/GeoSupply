@@ -72,6 +72,7 @@ class FactCheckAgent(BaseAgent):
     max_concurrent = 5
 
     def __init__(self) -> None:
+        super().__init__()
         self._total_checked: int = 0
         self._total_quarantined: int = 0
 

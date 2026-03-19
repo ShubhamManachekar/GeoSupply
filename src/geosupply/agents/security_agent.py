@@ -51,6 +51,7 @@ class SecurityAgent(BaseAgent):
     _access_log: list[dict]               # audit trail
 
     def __init__(self) -> None:
+        super().__init__()
         self._key_map = {
             "groq": "GROQ_API_KEY",
             "claude": "CLAUDE_API_KEY",

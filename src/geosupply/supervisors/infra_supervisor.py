@@ -79,11 +79,16 @@ class InfraSupervisor(BaseSupervisor):
     ]
 
     def __init__(self, event_bus: "EventBus | None" = None) -> None:
+        super().__init__()
+        self.agents = [
+            "LoggingAgent", "SecurityAgent", "HealthCheckAgent",
+            "RouteManagerAgent", "MoERouterAgent", "SwarmManagerAgent",
+            "KnowledgeGraphAgent",
+        ]
         # Initialise agent registry with stubs (replaced by real agents at runtime)
         self._agent_registry: dict[str, _StubAgent] = {
             agent_name: _StubAgent(agent_name) for agent_name in self.agents
         }
-        self.reset_budget()
 
         # Watchdog integration — subscribe to alerts if event_bus is provided
         self._event_bus = event_bus

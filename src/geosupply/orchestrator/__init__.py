@@ -1,1 +1,1 @@
-"""GeoSupply AI — Orchestrator package scaffold (no concrete SwarmMaster yet)."""
+"""GeoSupply AI — Orchestrator package scaffold (DAG routing in SwarmManagerAgent; dedicated class planned)."""

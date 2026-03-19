@@ -106,6 +106,7 @@ class KnowledgeGraphAgent(BaseAgent):
     max_concurrent = 1   # single-writer invariant (FA v1 G5)
 
     def __init__(self, db_path: Path | None = None) -> None:
+        super().__init__()
         # Graph storage: source → target → relation → weight
         self._graph: dict[str, dict[str, dict[str, float]]] = {}
         # Write buffer (G5)

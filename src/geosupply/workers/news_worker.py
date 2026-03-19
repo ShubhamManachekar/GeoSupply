@@ -20,6 +20,7 @@ from typing import Any
 from urllib.parse import urlencode
 
 from geosupply.core.base_worker import BaseWorker
+from geosupply.core.decorators import breaker
 from geosupply.schemas import WorkerError
 
 logger = logging.getLogger(__name__)
@@ -271,6 +272,7 @@ class NewsWorker(BaseWorker):
                 trace_id=trace_id,
             ).model_dump()
 
+    @breaker
     async def _fetch_url(self, url: str, trace_id: str) -> dict:
         """
         Fetch JSON from URL. Uses httpx in production.

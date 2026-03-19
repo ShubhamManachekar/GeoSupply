@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from geosupply.core.base_worker import BaseWorker
+from geosupply.core.decorators import breaker
 from geosupply.schemas import WorkerError
 
 logger = logging.getLogger(__name__)
@@ -171,7 +172,7 @@ class AISWorker(BaseWorker):
     timeout_seconds = 30
 
     def __init__(self) -> None:
-        super().__init__() if hasattr(super(), '__init__') else None
+        super().__init__()
         # In-memory vessel buffer: MMSI → latest position
         self._vessel_buffer: dict[str, dict] = {}
 
@@ -284,6 +285,7 @@ class AISWorker(BaseWorker):
                 trace_id=trace_id,
             ).model_dump()
 
+    @breaker
     async def _get_vessel_data(self, region: str, mmsi: str | None, trace_id: str) -> list[dict]:
         """
         Get vessel data. In production, reads from WS buffer.

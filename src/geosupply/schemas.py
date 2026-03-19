@@ -1,8 +1,8 @@
 """
-GeoSupply AI — All 25 Pydantic v2 Schemas (FA v2)
+GeoSupply AI — All 32 Pydantic v2 Schemas (FA v3)
 Part X: Registry — every schema used by the swarm.
 
-Schema #1-22: v10 base schemas
+Schema #1-32: FA v3 schemas (original v10 base + Session 22 additions)
 Schema #23: WorkerError (FA v2 G9)
 Schema #24: GeoEventRecord | Schema #25: GeoEventTimeline
 

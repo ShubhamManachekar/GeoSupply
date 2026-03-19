@@ -121,7 +121,8 @@ class RAGPipelineSubAgent(BaseSubAgent):
             import chromadb  # type: ignore[import]
             from geosupply.config import CHROMADB_DIR
             self._chroma_client = chromadb.PersistentClient(path=str(CHROMADB_DIR))
-        except Exception:
+        except Exception as exc:
+            logger.warning("RAGPipelineSubAgent: ChromaDB init failed (falling back to keyword): %s", exc)
             self._chroma_client = None   # Fallback: in-memory keyword retrieval
 
     async def teardown(self) -> None:
@@ -152,7 +153,8 @@ class RAGPipelineSubAgent(BaseSubAgent):
                 (doc, round(max(0.0, 1.0 - dist), 4))
                 for doc, dist in zip(docs, distances)
             ]
-        except Exception:
+        except Exception as exc:
+            logger.warning("RAGPipelineSubAgent: ChromaDB query failed (returning empty): %s", exc)
             return []
 
     def _retrieve_keyword_fallback(

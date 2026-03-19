@@ -7,21 +7,22 @@ description: Phase gate audit procedures for GeoSupply — connectivity checks, 
 
 > Custom GeoSupply skill — run BEFORE closing any development phase
 
-## Current Phase Status (2026-03-19 Session 21)
+## Current Phase Status (2026-03-19 Session 22)
 | Phase | Status | Tests | Notes |
 |-------|--------|-------|-------|
-| 0 | ✅ COMPLETE | — | config, 29 schemas, base classes |
+| 0 | ✅ COMPLETE | — | config, 32 schemas, base classes |
 | 1 | ✅ COMPLETE | — | 9 infra/core agents |
 | 2 | ✅ COMPLETE | — | 4 ingestion workers + InputSanitiser |
 | 3 | ✅ COMPLETE | — | 5 NLP workers |
-| 4 | ✅ COMPLETE | 674 pass | 8/8 intel workers |
-| 5 | ✅ COMPLETE | 674 pass | 7/7 subagents (Watchdog + SourceCluster added) |
-| 6 | 🟡 PARTIAL | 674 pass | 4/14 supervisors; NLPSupervisor has InputSanitiser gate |
-| 7 | 🟡 PARTIAL | 674 pass | KGAgent now has SQLite persistence; NetworkX planned |
-| Quality | 🟡 PARTIAL | 674 pass | FactCheckAgent + SummarizationAuditAgent added; QualitySupervisor needs wiring |
+| 4 | ✅ COMPLETE | 747 pass | 8/8 intel workers |
+| 5 | ✅ COMPLETE | 747 pass | 10/10 subagents (GraphRAG + BriefSynth + SemanticDrift added Session 22) |
+| 6 | 🟡 PARTIAL | 747 pass | 5/14 supervisors; InfraSupervisor added Session 22 |
+| 7 | 🟡 PARTIAL | 747 pass | KGAgent now has SQLite persistence; NetworkX planned |
+| 8 | 🟡 PARTIAL | 747 pass | SwarmMaster.decompose()+DAG in SwarmManagerAgent; dedicated class planned |
+| Quality | 🟡 PARTIAL | 747 pass | FactCheckAgent + SummarizationAuditAgent; QualitySupervisor needs wiring |
 | 14 | ✅ COMPLETE | — | audit tooling |
 
-## Gap Status (Session 21)
+## Gap Status (Session 22)
 | Gap | Before | After |
 |-----|--------|-------|
 | Rule 10 — Watchdog | ❌ No watchdog | ✅ WatchdogSubAgent polls all agents |
@@ -31,6 +32,11 @@ description: Phase gate audit procedures for GeoSupply — connectivity checks, 
 | FactCheckAgent missing | ❌ | ✅ Implemented |
 | SourceClusterSubAgent missing | ❌ | ✅ Implemented |
 | SummarizationAuditAgent missing | ❌ | ✅ Implemented |
+| InfraSupervisor missing | ❌ watchdog.alert had no consumer | ✅ Subscribes + restarts stuck agents |
+| SwarmMaster.decompose() missing | ❌ round-robin only | ✅ decompose() + execute_dag() + route() |
+| GraphRAGSubAgent missing | ❌ KG unused in retrieval | ✅ KG traversal + vector search hybrid |
+| BriefSynthSubAgent missing | ❌ no MoA synthesis | ✅ 3-proposer MoA + 4-level fallback |
+| SemanticDriftMonitor missing | ❌ no drift detection | ✅ KL divergence weekly monitor |
 
 ## The Golden Rule
 
@@ -127,7 +133,7 @@ print(f'✅ BUDGET_CAP_INR = ₹{BUDGET_CAP_INR}')
 ### Step 5: Schema Sync Verification
 ```bash
 PYTHONPATH=src python -c "
-from geosupply.config import ALL_SCHEMAS, SCHEMA_VERSIONS
+from geosupply.schemas import ALL_SCHEMAS, SCHEMA_VERSIONS
 missing = [s.__name__ for s in ALL_SCHEMAS if s.__name__ not in SCHEMA_VERSIONS]
 if missing:
     print(f'❌ Schemas missing from SCHEMA_VERSIONS: {missing}')

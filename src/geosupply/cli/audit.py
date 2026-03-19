@@ -36,9 +36,9 @@ def discover_components(package_name="geosupply"):
     for importer, modname, ispkg in pkgutil.walk_packages(package.__path__, prefix):
         try:
             importlib.import_module(modname)
-        except Exception:
-            # Ignore modules that fail to import during discovery 
-            pass
+        except Exception as exc:
+            # Log but don't fail on modules that can't be imported during discovery
+            logger.debug("audit: skipped module %s during discovery: %s", modname, exc)
 
     workers = BaseWorker.__subclasses__()
     agents = BaseAgent.__subclasses__()
@@ -116,8 +116,8 @@ def run_oversight_tests(workers, agents, subagents, strict=False):
              if "BaseAgent" not in mro:
                  all_valid = False
                  print(f"  {Fore.RED}- {agent_cls.__name__} MRO is broken{Style.RESET_ALL}")
-        except Exception:
-             pass
+        except Exception as exc:
+             logger.warning("audit: MRO check failed for %s: %s", agent_cls.__name__, exc)
              
     if all_valid:
         print(f"  {Fore.GREEN}✓ All {len(agents)} Active Agents have valid MRO inheritance{Style.RESET_ALL}")
