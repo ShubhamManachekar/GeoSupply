@@ -203,7 +203,10 @@ SCHEMA_VERSIONS: dict[str, dict[str, int]] = {
     # Phase 6+ schemas (#28-29)
     "WatchdogAlert": {"current": 1, "min_supported": 1},
     "FactCheckResult": {"current": 1, "min_supported": 1},
-    # Phase 15 schemas (#30-32): DisasterEvent, AviationTrack, MarketSignal
+    # Session 22 schemas (#30-32): BriefSynthSubAgent, SemanticDriftMonitor, SwarmMaster DAG
+    "BriefProposal": {"current": 1, "min_supported": 1},
+    "DriftReport": {"current": 1, "min_supported": 1},
+    "DAGPlan": {"current": 1, "min_supported": 1},
 }
 
 # ============================================================

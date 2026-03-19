@@ -7,6 +7,7 @@ from geosupply.subagents.source_feedback_subagent import SourceFeedbackSubAgent
 from geosupply.subagents.rag_pipeline_subagent import RAGPipelineSubAgent
 from geosupply.subagents.watchdog_subagent import WatchdogSubAgent
 from geosupply.subagents.source_cluster_subagent import SourceClusterSubAgent
+from geosupply.subagents.graph_rag_subagent import GraphRAGSubAgent
 
 __all__ = [
     "NLPPipelineSubAgent",
@@ -16,4 +17,5 @@ __all__ = [
     "RAGPipelineSubAgent",
     "WatchdogSubAgent",
     "SourceClusterSubAgent",
+    "GraphRAGSubAgent",
 ]

@@ -32,19 +32,31 @@ Tests: **674 passing** | Schemas: **29** (WatchdogAlert #28, FactCheckResult #29
 | SourceClusterSubAgent missing | `SourceClusterSubAgent` — domain/style/penalty clustering | `subagents/source_cluster_subagent.py` |
 | SummarizationAuditAgent missing | `SummarizationAuditAgent` — severity band distortion check | `agents/summarization_audit_agent.py` |
 
-**Test count**: 524 passing, 99% coverage. Integration tests in `tests/integration/`.
+**Test count**: 674 passing. Integration tests in `tests/integration/`.
 Dynamic audit is the source of count truth: `python -m geosupply.cli.audit --level strict`.
 
-### Phases Complete
-- ✅ Phase 0: Foundation (config, schemas, base classes)
-- ✅ Phase 1: Infrastructure (LoggingAgent, SecurityAgent, HealthCheckAgent)
-- ✅ Phase 2: Data Ingestion (NewsWorker, IndiaAPIWorker, TelegramWorker, AISWorker)
+### Phases Complete (Session 21)
+- ✅ Phase 0: Foundation (config, 29 schemas, base classes + G3 BaseAgent.handle_event)
+- ✅ Phase 1: Infrastructure (LoggingAgent, SecurityAgent, HealthCheckAgent, EventBus.verify_event)
+- ✅ Phase 2: Data Ingestion (NewsWorker, IndiaAPIWorker, TelegramWorker, AISWorker + InputSanitiser now wired in NLPSupervisor)
 - ✅ Phase 3: NLP Workers (Claim, NER, Sentiment, Propaganda, Translation)
-- 🟡 Phase 4: Intel Workers (SourceCred, CyberThreat, Supplier, Sanctions, Network, CIB — 6 of 8 done)
-- 🟡 Phase 5: SubAgent Layer (NLPPipeline, HallucinationCheck, AuditSample, SourceFeedback — 4 of 5 done)
-- 🟡 Phase 6: Supervisors (Ingestion, Quality — 2 of 14 done)
-- 🟡 Phase 7: KnowledgeGraphAgent (in-memory G5 dedup + write-buffer — pending production KG)
+- ✅ Phase 4: Intel Workers (all 8/8: SourceCred, CyberThreat, Supplier, Sanctions, Network, CIB, Verifier, Author)
+- 🟡 Phase 5-6: SubAgents (7/13) + Supervisors (4/14)
+- 🟡 Phase 7: KnowledgeGraphAgent + G5 dedup + SQLite persistence (NetworkX/ChromaDB planned)
 - ✅ Phase 14: Audit/QA tooling
+
+### Remaining P0 Items (Next Session — blocks end-to-end pipeline)
+1. **InfraSupervisor** — subscribes to `watchdog.alert`; restarts stuck agents; CANNOT be paused.
+   - Design: `Documents/fa_v3_architecture/target_state/09_component_design_backlog.md §Item1`
+2. **SwarmMaster.decompose() + DAG routing** — topological sort + ROUTING_TABLE 50+ entries.
+   - Design: `Documents/fa_v3_architecture/target_state/09_component_design_backlog.md §Item4`
+
+### Remaining P1 Items
+3. **GraphRAGSubAgent** — KG entity traversal + ChromaDB hybrid; confidence ≥ HALLUCINATION_FLOOR
+4. **BriefSynthSubAgent** — 3-proposer MoA + 4-level fallback; SQLite proposal audit invariant
+
+### Remaining P2 Items
+5. **SemanticDriftMonitor** — KL divergence KL>0.30=WARN, KL>0.60=SUSPEND; weekly schedule
 
 ## Locked Rules (NEVER Override)
 
@@ -77,6 +89,62 @@ Dynamic audit is the source of count truth: `python -m geosupply.cli.audit --lev
 # @internal_breaker for Tier-3+ agent calls
 # SecurityAgent.get_key() for ALL API keys — never hardcode
 # Every process() must track cost_inr in meta
+```
+
+## Architecture Design References (Session 21 — Next Items)
+
+### SwarmMaster ROUTING_TABLE (MVP subset)
+```python
+# task_type → (supervisor_name, tier, uses_static)
+ROUTING_TABLE = {
+    "INGEST_NEWS":       ("IngestionSupervisor",          0, False),
+    "NLP_SENTIMENT":     ("NLPSupervisor",                1, True),
+    "NLP_NER":           ("NLPSupervisor",                1, True),
+    "NLP_CLAIM":         ("NLPSupervisor",                1, True),
+    "CLAIM_VERIFY":      ("QualitySupervisor",            3, False),
+    "SOURCE_SCORE":      ("IntelSupervisor",              1, True),
+    "NARRATIVE_NETWORK": ("IntelSupervisor",              2, False),
+    "RAG_QUERY":         ("IntelSupervisor",              3, False),
+    "BRIEF_GENERATE":    ("IntelSupervisor",              3, False),
+    "INPUT_SANITISE":    ("InfraSupervisor",              0, False),
+    "KG_CANARY":         ("InfraSupervisor",              0, False),
+    "INFRA_HEALTH":      ("InfraSupervisor",              0, False),
+    "BACKUP_RUN":        ("DisasterRecoverySupervisor",   0, False),
+    "COST_PROJECT":      ("DisasterRecoverySupervisor",   0, False),
+}
+```
+
+### SUPPLY_BRIEF DAG Decomposition Template
+```
+T1: INGEST_NEWS         (deps: [])
+T2: INGEST_INDIA_API    (deps: [])              ← parallel with T1
+T3: NLP_NER             (deps: [T1, T2])
+T4: NLP_SENTIMENT       (deps: [T1, T2])        ← parallel with T3
+T5: NLP_CLAIM           (deps: [T1, T2])        ← parallel with T3, T4
+T6: SOURCE_SCORE        (deps: [T3, T4, T5])
+T7: CLAIM_VERIFY        (deps: [T5])            ← parallel with T6
+T8: NARRATIVE_NETWORK   (deps: [T3, T6])        ← parallel with T7
+T9: RAG_QUERY           (deps: [T3, T5, T6, T7])
+T10: BRIEF_GENERATE     (deps: [T8, T9])
+```
+
+### BriefSynthSubAgent MoA Levels
+```
+Level 0: GPT-OSS:20b full aggregation (primary) — INTERNAL_BREAKER_TIMEOUT=60s
+Level 1: Groq llama-3.3-70b aggregation (cloud fallback)
+Level 2: MOA_SCORING_WEIGHTS = {factcheck:0.4, source_cred:0.3, evidence_ratio:0.3}
+Level 3: Manual — return all 3 proposals to admin queue
+MOA_MERGE_THRESHOLD = 0.05  (if top 2 within 0.05, merge)
+MOA_ESCALATE_THRESHOLD = 0.50  (below this → Level 3)
+SQLite invariant: ALL 3 proposals saved BEFORE aggregation begins
+```
+
+### InfraSupervisor — Key Constraint
+```
+CANNOT be paused (override BaseSupervisor.pause() to raise or no-op)
+Subscribes to "watchdog.alert" on EventBus at __init__
+On STUCK_BUSY / STUCK_ERROR alert → safe_execute({"action":"recover"}) on agent
+On UNREACHABLE alert → log INFRA_RESTART + alert admin via LoggingAgent
 ```
 
 ## Banned Patterns (Learned from Phase 0+1)

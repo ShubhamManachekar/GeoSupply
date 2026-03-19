@@ -9,11 +9,15 @@ Date: March 8, 2026
 - EventBus signing and verification behavior retained.
 - Guarded state transitions for agents.
 
-## Operational Reality Constraints
-- Control-plane manager agents (swarm/moe/budget/route) exist at layer 3, but supervisor/orchestrator execution tiers remain unimplemented.
-- No concrete subagent, supervisor, or orchestrator implementations yet.
-- Tier-1 STATIC mandatory list exists in config, but corresponding workers are not implemented.
-- Most architecture promises in v9/v10/final are currently design intent, not deployed behavior.
+## Operational Reality Constraints (Updated: Session 21 — 2026-03-19)
+- Control-plane manager agents (swarm/moe/budget/route) exist at Layer 3; supervisor execution tiers partially implemented (4/14).
+- 7 SubAgents implemented (NLPPipeline, HallucinationCheck, AuditSample, SourceFeedback, RAGPipeline, WatchdogSubAgent, SourceClusterSubAgent). 6 planned subagents remain.
+- 4 Supervisors implemented (Ingestion, Quality, NLP+pre-gate, Intel). 10 supervisors remain.
+- Orchestrator (SwarmMaster.decompose() + DAG routing): NOT implemented. Round-robin lane splitting exists only.
+- Tier-1 STATIC mandatory workers are ALL implemented (SentimentWorker, NERWorker, ClaimWorker, SourceCredWorker, CyberThreatWorker, SupplierWorker, SanctionsWorker).
+- Most architecture promises in v9/v10/final for Phase 8+ (remaining supervisors, full MoE routing) remain design intent.
+- InfraSupervisor not yet implemented — watchdog.alert events are published but have no subscriber/consumer.
+- SwarmMaster.decompose(): Not implemented — blocking end-to-end pipeline execution.
 
 ## Near-Term Risk Constraints
 - OpenSky OAuth2 risk is documented against Phase 15 timing.

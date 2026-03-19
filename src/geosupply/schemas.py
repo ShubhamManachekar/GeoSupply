@@ -472,3 +472,54 @@ class FactCheckResult(BaseModel):
 
 ALL_SCHEMAS["WatchdogAlert"] = WatchdogAlert
 ALL_SCHEMAS["FactCheckResult"] = FactCheckResult
+
+
+# ============================================================
+# Schema #30: BriefProposal
+# Used by: BriefSynthSubAgent (audit invariant — all 3 proposals
+#          must be persisted BEFORE aggregation)
+# ============================================================
+class BriefProposal(BaseModel):
+    schema_version: int = 1
+    proposal_id: str
+    trace_id: str
+    brief_text: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    proposer_tier: Literal[1, 2, 3]           # LLMTier used
+    factcheck_score: float = Field(ge=0.0, le=1.0, default=0.0)
+    source_credibility_avg: float = Field(ge=0.0, le=1.0, default=0.0)
+    claim_evidence_ratio: float = Field(ge=0.0, le=1.0, default=0.0)
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
+# ============================================================
+# Schema #31: DriftReport
+# Used by: SemanticDriftMonitor output
+# ============================================================
+class DriftReport(BaseModel):
+    schema_version: int = 1
+    channel_id: str
+    kl_score: float = Field(ge=0.0)
+    alert_level: Literal["NORMAL", "WARN", "SUSPEND", "SILENT"]
+    action: str                               # human-readable action taken
+    message_count: int = 0
+    checked_at: datetime = Field(default_factory=_utcnow)
+
+
+# ============================================================
+# Schema #32: DAGPlan
+# Used by: SwarmManagerAgent.decompose() output
+# ============================================================
+class DAGPlan(BaseModel):
+    schema_version: int = 1
+    plan_id: str
+    compound_task_type: str
+    task_packets: list[dict]                  # serialised TaskPacket list
+    execution_levels: list[list[str]]         # topological sort layers
+    total_estimated_cost_inr: float = 0.0
+    generated_at: datetime = Field(default_factory=_utcnow)
+
+
+ALL_SCHEMAS["BriefProposal"] = BriefProposal
+ALL_SCHEMAS["DriftReport"] = DriftReport
+ALL_SCHEMAS["DAGPlan"] = DAGPlan
