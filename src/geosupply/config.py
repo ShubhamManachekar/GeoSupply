@@ -197,8 +197,11 @@ SCHEMA_VERSIONS: dict[str, dict[str, int]] = {
     "WorkerError": {"current": 1, "min_supported": 1},
     "GeoEventRecord": {"current": 1, "min_supported": 1},
     "GeoEventTimeline": {"current": 1, "min_supported": 1},
+    # Phase 4/Tier-3 schemas (#26-27)
+    "VerificationResult": {"current": 1, "min_supported": 1},
+    "AuthorProfile": {"current": 1, "min_supported": 1},
     # Phase 2 workers don't define new schemas (Tier 0 raw output)
-    # Phase 15 schemas (#26-28): DisasterEvent, AviationTrack, MarketSignal
+    # Phase 15 schemas (#28-30): DisasterEvent, AviationTrack, MarketSignal
 }
 
 # ============================================================

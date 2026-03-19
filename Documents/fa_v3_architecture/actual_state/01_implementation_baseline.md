@@ -3,13 +3,13 @@
 Date: March 19, 2026
 
 ## Code-Verified Counts
-- Workers implemented: 13
-- Agents implemented: 8
-- Subagents implemented: 2
-- Supervisors implemented: 2
+- Workers implemented: 21
+- Agents implemented: 9
+- Subagents implemented: 5
+- Supervisors implemented: 4
 - Orchestrator implementations: 0
 
-## Implemented Workers (13)
+## Implemented Workers (21)
 
 ### Ingestion Workers (Phase 2)
 - `src/geosupply/workers/news_worker.py`
@@ -30,11 +30,17 @@ Date: March 19, 2026
 - `src/geosupply/workers/propaganda_worker.py`
 - `src/geosupply/workers/translation_worker.py`
 
-### Intel Workers — Tier-1 STATIC (Phase 4)
-- `src/geosupply/workers/source_cred_worker.py`
-- `src/geosupply/workers/cyber_threat_worker.py`
+### Intel Workers — Phase 4
+- `src/geosupply/workers/source_cred_worker.py` (Tier-1 STATIC)
+- `src/geosupply/workers/cyber_threat_worker.py` (Tier-1 STATIC)
+- `src/geosupply/workers/supplier_worker.py` (Tier-1 STATIC)
+- `src/geosupply/workers/sanctions_worker.py` (Tier-1 STATIC)
+- `src/geosupply/workers/network_worker.py` (Tier-2)
+- `src/geosupply/workers/cib_worker.py` (Tier-2)
+- `src/geosupply/workers/verifier_worker.py` (Tier-3)
+- `src/geosupply/workers/author_worker.py` (Tier-3)
 
-## Implemented Agents (8)
+## Implemented Agents (9)
 - `src/geosupply/agents/logging_agent.py`
 - `src/geosupply/agents/security_agent.py`
 - `src/geosupply/agents/health_check_agent.py`
@@ -43,14 +49,20 @@ Date: March 19, 2026
 - `src/geosupply/agents/moe_router_agent.py`
 - `src/geosupply/agents/budget_manager_agent.py`
 - `src/geosupply/agents/route_manager_agent.py`
+- `src/geosupply/agents/knowledge_graph_agent.py` (Phase 7)
 
-## Implemented SubAgents (2) — Phase 5
+## Implemented SubAgents (5) — Phase 5
 - `src/geosupply/subagents/nlp_pipeline_subagent.py`
 - `src/geosupply/subagents/hallucination_check_subagent.py`
+- `src/geosupply/subagents/audit_sample_subagent.py`
+- `src/geosupply/subagents/source_feedback_subagent.py`
+- `src/geosupply/subagents/rag_pipeline_subagent.py`
 
-## Implemented Supervisors (2) — Phase 6
+## Implemented Supervisors (4) — Phase 6
 - `src/geosupply/supervisors/ingestion_supervisor.py`
 - `src/geosupply/supervisors/quality_supervisor.py`
+- `src/geosupply/supervisors/nlp_supervisor.py`
+- `src/geosupply/supervisors/intel_supervisor.py`
 
 ## Implemented Core Contracts
 - Config and locked constants: `src/geosupply/config.py`
@@ -59,8 +71,13 @@ Date: March 19, 2026
 - Audit CLI baseline: `src/geosupply/cli/audit.py`
 
 ## Test Coverage
-- Total tests: 434 (all passing)
+- Total tests: 596 (all passing — 587 unit + 9 integration)
 - Coverage: 99%+ across all implemented components
+- Integration tests: `tests/integration/test_pipeline_integration.py`
+
+## Schemas
+- Total schemas: 27 (25 original + VerificationResult #26 + AuthorProfile #27)
+- All schemas registered in SCHEMA_VERSIONS (audit-verified)
 
 ## Status Label
-- Architecture maturity: Foundation + ingestion + NLP + intel workers + first subagent pair + first supervisor pair.
+- Architecture maturity: Foundation + ingestion + NLP + intel workers (8/8) + subagents (5/5) + supervisors (4/14) + KnowledgeGraphAgent + RAGPipeline + integration tests.

@@ -8,6 +8,7 @@ import os
 import pytest
 from datetime import datetime, timezone
 from unittest.mock import patch
+from urllib.parse import urlparse
 
 from geosupply.workers.news_worker import (
     NewsWorker,
@@ -34,21 +35,24 @@ async def worker():
 class TestURLBuilding:
     def test_newsapi_url_has_query(self):
         url = _build_request_url("newsapi", "india supply chain", api_key="test_key")
-        assert "newsapi.org" in url
-        assert "q=india+supply+chain" in url
-        assert "apiKey=test_key" in url
+        parsed = urlparse(url)
+        assert parsed.netloc == "newsapi.org" or parsed.netloc.endswith(".newsapi.org")
+        assert "q=india+supply+chain" in parsed.query
+        assert "apiKey=test_key" in parsed.query
 
     def test_gdelt_url_no_auth(self):
         url = _build_request_url("gdelt", "earthquake india")
-        assert "gdeltproject.org" in url
-        assert "query=earthquake+india" in url
-        assert "apiKey" not in url  # GDELT has no auth
+        parsed = urlparse(url)
+        assert parsed.netloc == "api.gdeltproject.org" or parsed.netloc.endswith(".gdeltproject.org")
+        assert "query=earthquake+india" in parsed.query
+        assert "apiKey" not in parsed.query  # GDELT has no auth
 
     def test_acled_url_has_country(self):
         url = _build_request_url("acled", "India", api_key="acled_key")
-        assert "acleddata.com" in url
-        assert "country=India" in url
-        assert "key=acled_key" in url
+        parsed = urlparse(url)
+        assert parsed.netloc == "api.acleddata.com" or parsed.netloc.endswith(".acleddata.com")
+        assert "country=India" in parsed.query
+        assert "key=acled_key" in parsed.query
 
 
 # ── Test: Normalisation (pure logic, no HTTP) ──

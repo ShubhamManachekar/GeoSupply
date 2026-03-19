@@ -10,10 +10,16 @@ description: RAG pipeline design and optimization for GeoSupply's GraphRAG, Chro
 
 ## GeoSupply RAG Context
 
-GeoSupply uses **three RAG SubAgents** (all in Layer 4, unimplemented):
-- `RAGSubAgent` — Standard dense retrieval over ChromaDB
-- `GraphRAGSubAgent` — NetworkX knowledge graph traversal + vector hybrid
-- `BriefSynthSubAgent` — Final brief generation from ranked context chunks
+GeoSupply SubAgent Layer (Phase 5 — COMPLETE):
+- ✅ `NLPPipelineSubAgent` — parallel Sentiment+NER+Claim enrichment pipeline
+- ✅ `HallucinationCheckSubAgent` — composite confidence + HALLUCINATION_FLOOR gate
+- ✅ `AuditSampleSubAgent` — probabilistic QA sampling with claim+sentiment scoring
+- ✅ `SourceFeedbackSubAgent` — credibility feedback loop with 3-strike penalty system
+- ✅ `RAGPipelineSubAgent` — ChromaDB dense retrieval + keyword fallback; NER+Claim entity-enhanced query; top-k rerank; HALLUCINATION_FLOOR faithfulness check
+
+Planned RAG SubAgents (Phase 8+):
+- ⬜ `GraphRAGSubAgent` — NetworkX KG traversal + vector hybrid
+- ⬜ `BriefSynthSubAgent` — Final brief generation from ranked context chunks
 
 All RAG workers feed into SubAgents through the EventBus. The `HALLUCINATION_FLOOR = 0.70` must be enforced at every generation step.
 

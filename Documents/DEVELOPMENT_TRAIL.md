@@ -797,3 +797,101 @@ When switching AI models, the incoming model MUST:
 - Phase 7: `KnowledgeGraphAgent` + write-buffer queue
 - Integration tests: end-to-end signed-event flows (Worker → EventBus → Agent → Supervisor)
 
+---
+
+### Session 19 — Phase 4/5/6/7 Delivery: Intel Workers + SubAgents + KGAgent + Integration Tests
+**Date**: 2026-03-19 IST
+**Model**: Claude Sonnet 4.6 | **Phases**: 4 (partial→6/8) + 5 (4/4 done) + 6 (partial) + 7 (partial)
+
+**Done**:
+1. **Phase 4 — Intel Workers (4 more, 6/8 total)**:
+   - `SupplierWorker` (Tier-1 STATIC) — supply chain risk scoring; dependency categories (SEMICONDUCTOR, CRITICAL_MINERAL, PHARMA, etc.); single-source, geographic, compliance risk; India-specific pen scoring.
+   - `SanctionsWorker` (Tier-1 STATIC) — entity screening against 6 lists (OFAC/UN/EU/UK_FCDO/SECO/India_MEA); fuzzy name match (threshold 0.80); highest-severity list wins.
+   - `NetworkWorker` (Tier-2) — narrative network entity extraction; relationship clustering (influence/trade/conflict/threat); hub-node detection; India-specific network scoring.
+   - `CIBWorker` (Tier-2) — Coordinated Inauthentic Behaviour detection; bot network pattern analysis (verb_ratio, punctuation_freq, template_match); 4-signal coordination scoring.
+2. **Phase 5 — SubAgent Layer (2 more, 4/4 done)**:
+   - `AuditSampleSubAgent` — 5% probabilistic QA sampler; `force_audit` bypass; PASS/WARN/FAIL verdicts based on claim+sentiment scoring.
+   - `SourceFeedbackSubAgent` — parallel SourceCredWorker + PropagandaWorker; 3-strike penalty system (-0.05/-0.10/-0.20); +0.03 boost for clean sources.
+3. **Phase 7 (partial) — KnowledgeGraphAgent**:
+   - `KnowledgeGraphAgent` — in-memory adjacency dict; write-buffer batching (size 50, FA v1 G5); 1-hour dedup window; canary queue (maxlen=10); task types: KG_ADD_TRIPLE/KG_QUERY/KG_FLUSH/KG_CANARY/KG_STATS.
+4. **Integration tests** — 9 end-to-end tests across 5 flows (Worker→EventBus→Agent pipeline; QualitySupervisor HALLUCINATION_FLOOR gate; KGAgent triple lifecycle; IngestionSupervisor routing; EventBus signed-event signing).
+5. **Skills updated**: geosupply-dev, worker-factory, knowledge-graph, phase-gate-auditor, rag-architect.
+
+**Files created**:
+- `src/geosupply/workers/supplier_worker.py`
+- `src/geosupply/workers/sanctions_worker.py`
+- `src/geosupply/workers/network_worker.py`
+- `src/geosupply/workers/cib_worker.py`
+- `src/geosupply/subagents/audit_sample_subagent.py`
+- `src/geosupply/subagents/source_feedback_subagent.py`
+- `src/geosupply/agents/knowledge_graph_agent.py`
+- `tests/unit/test_supplier_worker.py`
+- `tests/unit/test_sanctions_worker.py`
+- `tests/unit/test_network_worker.py`
+- `tests/unit/test_cib_worker.py`
+- `tests/unit/test_audit_sample_subagent.py`
+- `tests/unit/test_source_feedback_subagent.py`
+- `tests/unit/test_knowledge_graph_agent.py`
+- `tests/integration/test_pipeline_integration.py`
+
+**Files modified**:
+- `.agent/skills/geosupply-dev/SKILL.md`
+- `.agent/skills/worker-factory/SKILL.md`
+- `.agent/skills/knowledge-graph/SKILL.md`
+- `.agent/skills/phase-gate-auditor/SKILL.md`
+- `.agent/skills/rag-architect/SKILL.md`
+- `Documents/fa_v3_architecture/actual_state/01_implementation_baseline.md`
+
+**Stats**: 524 tests passed (up from 434), 0 failures, 99% coverage. Workers: 19, Agents: 9, SubAgents: 4, Supervisors: 2.
+
+**Next priorities**:
+- Phase 4 remaining: `VerifierWorker` (Tier-3), `AuthorWorker` (Tier-3)
+- Phase 5 remaining: `RAGPipelineSubAgent` (ChromaDB dense retrieval), `GraphRAGSubAgent`, `BriefSynthSubAgent`
+- Phase 6 remaining: 12 more supervisors (NLP, Intel, ML, India, Dashboard, Infra, Dev, Test, Tech, Marketing, LoopholeHunter, DR)
+- Phase 7 full: NetworkX DiGraph + ChromaDB vector store + SQLite provenance
+- Phase 8: SwarmMaster orchestrator MVP
+
+---
+
+### Session 20 — Phase 4/5/6 Completion: Tier-3 Workers + RAGPipeline + NLP/Intel Supervisors
+**Date**: 2026-03-19 IST
+**Model**: Claude Sonnet 4.6 | **Phases**: 4 (8/8 ✅) + 5 (5/5 ✅) + 6 (4/14)
+
+**Done**:
+1. **Phase 4 — Intel Workers COMPLETE (8/8)**:
+   - `VerifierWorker` (Tier-3) — multi-signal claim verification: corroboration/contradiction/hedging analysis; VERIFIED/REFUTED/UNVERIFIABLE/INSUFFICIENT_EVIDENCE verdicts; statistical claim numeric matching; 5-source extraction.
+   - `AuthorWorker` (Tier-3) — stylometric author attribution: bot probability (5-signal), state-sponsor detection (5-pattern), vocabulary richness, sentence variance; HUMAN/BOT/STATE_SPONSORED/UNKNOWN classification.
+2. **Phase 5 — SubAgents COMPLETE (5/5)**:
+   - `RAGPipelineSubAgent` — ChromaDB dense retrieval (with keyword fallback); NER+Claim parallel extraction for entity-enhanced queries; top-k reranking; HALLUCINATION_FLOOR faithfulness check; 6-step pipeline.
+3. **Phase 6 — Supervisors (4/14)**:
+   - `NLPSupervisor` — 5-agent routing (Sentiment/NER/Claim/Translation/Propaganda); ₹8/cycle; `capable_agents()` capability index.
+   - `IntelSupervisor` — 6-agent routing (Supplier/Sanctions/SourceCred/Cyber/Verifier/Author); ₹20/cycle; Tier-3 budget pre-check gate; `tier3_agents()` helper.
+4. **Schemas** — Added `VerificationResult` (#26) and `AuthorProfile` (#27); SCHEMA_VERSIONS updated; ALL_SCHEMAS = 27; all audit tests pass.
+5. **72 new tests** — VerifierWorker (13), AuthorWorker (13), RAGPipelineSubAgent (11), NLPSupervisor (17), IntelSupervisor (18).
+
+**Files created**:
+- `src/geosupply/workers/verifier_worker.py`
+- `src/geosupply/workers/author_worker.py`
+- `src/geosupply/subagents/rag_pipeline_subagent.py`
+- `src/geosupply/supervisors/nlp_supervisor.py`
+- `src/geosupply/supervisors/intel_supervisor.py`
+- `tests/unit/test_verifier_worker.py`
+- `tests/unit/test_author_worker.py`
+- `tests/unit/test_rag_pipeline_subagent.py`
+- `tests/unit/test_nlp_supervisor.py`
+- `tests/unit/test_intel_supervisor.py`
+
+**Files modified**:
+- `src/geosupply/schemas.py` — VerificationResult + AuthorProfile schemas
+- `src/geosupply/config.py` — SCHEMA_VERSIONS entries for #26/#27
+- `tests/unit/test_schemas.py` — Updated schema count from 25 to 27
+- `Documents/fa_v3_architecture/actual_state/01_implementation_baseline.md`
+
+**Stats**: 596 tests passed (up from 524), 0 failures, 99% coverage. Workers: 21, Agents: 9, SubAgents: 5, Supervisors: 4.
+
+**Next priorities**:
+- Phase 6 remaining: `MLSupervisor`, `IndiaSupervisor`, `DashboardSupervisor`, `InfraSupervisor` (10 more)
+- Phase 7 full: NetworkX DiGraph integration in KnowledgeGraphAgent + ChromaDB embeddings
+- Phase 8: SwarmMaster orchestrator MVP (DAG scheduler, degraded-mode, full end-to-end)
+- Phase 9: GeoRiskScore aggregation pipeline
+

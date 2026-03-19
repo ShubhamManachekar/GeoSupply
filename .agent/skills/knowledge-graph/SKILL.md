@@ -10,13 +10,39 @@ description: Knowledge graph construction, deduplication, NetworkX traversal, Gr
 ## KG Architecture
 
 ```
-KnowledgeGraphAgent   ← Owns write authority to KG (Layer 3)
-NetworkX in-memory    ← Primary graph store (fast traversal)
-ChromaDB              ← Vector embeddings for nodes (semantic search)
-SQLite                ← Edge metadata + event provenance
+KnowledgeGraphAgent   ← Owns write authority to KG (Layer 3) [IMPLEMENTED ✅]
+NetworkX in-memory    ← Primary graph store (fast traversal) [planned]
+ChromaDB              ← Vector embeddings for nodes (semantic search) [planned]
+SQLite                ← Edge metadata + event provenance [planned]
 ```
 
-**Single-writer rule**: Only `KnowledgeGraphAgent` writes to the KG. Workers send `KnowledgeUpdateRequest` events — the agent processes them in batches.
+**Single-writer rule**: Only `KnowledgeGraphAgent` writes to the KG. Workers send `KG_ADD_TRIPLE` tasks — the agent batches them (G5 write-buffer, size 50) and deduplicates within a 1-hour sliding window.
+
+## Implementation Status (2026-03-19)
+`KnowledgeGraphAgent` is implemented at `src/geosupply/agents/knowledge_graph_agent.py`:
+- ✅ In-memory adjacency dict graph (source → target → relation → weight)
+- ✅ Write-buffer batching (`KG_WRITE_BUFFER_BATCH_SIZE = 50`)
+- ✅ Dedup key = `(source.lower(), target.lower(), relation.upper())` — FA v1 G5
+- ✅ 1-hour dedup window (`KG_DEDUP_WINDOW_SECONDS = 3600`)
+- ✅ Canary sampling (last `KG_CANARY_SAMPLE_SIZE = 10` triples)
+- ✅ Task types: `KG_ADD_TRIPLE`, `KG_QUERY`, `KG_FLUSH`, `KG_CANARY`, `KG_STATS`
+- ⬜ NetworkX integration (planned Phase 7 full)
+- ⬜ ChromaDB vector embeddings
+- ⬜ SQLite provenance store
+
+## Task API
+```python
+# Add a triple
+await agent.safe_execute({"task_type": "KG_ADD_TRIPLE", "source": "India", "relation": "TRADE", "target": "Japan", "weight": 1.0})
+# Query neighbours
+await agent.safe_execute({"task_type": "KG_QUERY", "entity": "India", "relation_filter": "TRADE"})
+# Force flush buffer
+await agent.safe_execute({"task_type": "KG_FLUSH"})
+# Get stats
+await agent.safe_execute({"task_type": "KG_STATS"})
+# Canary sample
+await agent.safe_execute({"task_type": "KG_CANARY"})
+```
 
 ---
 

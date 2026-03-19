@@ -364,6 +364,7 @@ class GeoEventRecord(BaseModel):
 # Schema #25: GeoEventTimeline
 # Used by: TimelineGeneratorAgent
 # ============================================================
+# NOTE: #26 and #27 are below the ALL_SCHEMAS registry — see end of file.
 class TimelineNode(BaseModel):
     event: GeoEventRecord
     related_events: list[str] = Field(default_factory=list)
@@ -404,3 +405,36 @@ ALL_SCHEMAS: dict[str, type[BaseModel]] = {
     "GeoEventRecord": GeoEventRecord,
     "GeoEventTimeline": GeoEventTimeline,
 }
+
+# ============================================================
+# Schema #26: VerificationResult
+# Used by: VerifierWorker (Tier-3)
+# ============================================================
+class VerificationResult(BaseModel):
+    schema_version: int = 1
+    claim_text: str
+    verdict: Literal["VERIFIED", "REFUTED", "UNVERIFIABLE", "INSUFFICIENT_EVIDENCE"]
+    confidence: float = Field(ge=0.0, le=1.0)
+    evidence_count: int = 0
+    contradictions: list[str] = Field(default_factory=list)
+    supporting_sources: list[str] = Field(default_factory=list)
+    verification_method: str = ""
+
+
+# ============================================================
+# Schema #27: AuthorProfile
+# Used by: AuthorWorker (Tier-3)
+# ============================================================
+class AuthorProfile(BaseModel):
+    schema_version: int = 1
+    author_type: Literal["HUMAN", "BOT", "STATE_SPONSORED", "UNKNOWN"]
+    attribution_confidence: float = Field(ge=0.0, le=1.0)
+    style_markers: list[str] = Field(default_factory=list)
+    bot_probability: float = Field(ge=0.0, le=1.0, default=0.0)
+    state_sponsor_indicators: list[str] = Field(default_factory=list)
+    language_register: str = ""  # FORMAL/INFORMAL/TECHNICAL/PROPAGANDA
+
+
+# Register new schemas
+ALL_SCHEMAS["VerificationResult"] = VerificationResult
+ALL_SCHEMAS["AuthorProfile"] = AuthorProfile
