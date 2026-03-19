@@ -7,17 +7,17 @@ description: Phase gate audit procedures for GeoSupply — connectivity checks, 
 
 > Custom GeoSupply skill — run BEFORE closing any development phase
 
-## Current Phase Status (2026-03-19)
+## Current Phase Status (2026-03-19 Session 20)
 | Phase | Status | Tests | Notes |
 |-------|--------|-------|-------|
 | 0 | ✅ COMPLETE | — | config, schemas, base classes |
 | 1 | ✅ COMPLETE | — | infra agents |
 | 2 | ✅ COMPLETE | — | 4 ingestion workers |
 | 3 | ✅ COMPLETE | — | 5 NLP workers |
-| 4 | 🟡 PARTIAL | 524 pass | 6/8 intel workers done |
-| 5 | 🟡 PARTIAL | 524 pass | 4/5 subagents done |
-| 6 | 🟡 PARTIAL | 524 pass | 2/14 supervisors done |
-| 7 | 🟡 PARTIAL | 524 pass | KGAgent in-memory, not full NetworkX |
+| 4 | ✅ COMPLETE | 596 pass | 8/8 intel workers (Verifier+Author added) |
+| 5 | ✅ COMPLETE | 596 pass | 5/5 subagents (RAGPipelineSubAgent added) |
+| 6 | 🟡 PARTIAL | 596 pass | 4/14 supervisors (NLP+Intel added) |
+| 7 | 🟡 PARTIAL | 596 pass | KGAgent in-memory; NetworkX/ChromaDB planned |
 | 14 | ✅ COMPLETE | — | audit tooling |
 
 ## The Golden Rule

@@ -9,15 +9,17 @@ description: GeoSupply AI development conventions, architecture rules, and code 
 
 GeoSupply AI is an India-centric geopolitical supply chain intelligence platform with FA v3 documentation governance. Use `Documents/fa_v3_architecture/actual_state/` for implementation truth and `Documents/fa_v3_architecture/target_state/` for intended architecture.
 
-## Current Baseline (Session 18–19 | 2026-03-19)
+## Current Baseline (Session 20 | 2026-03-19)
 
 | Layer | Component | Count |
 |-------|-----------|-------|
-| Workers | Ingestion (4) + Infra (1) + Event (1) + NLP (5) + Intel (6: Claim, SourceCred, CyberThreat, Supplier, Sanctions, Network/CIB) | **19** |
-| Agents | Logging, Security, HealthCheck, Timeline, Swarm, MoE, Budget, Route, **KnowledgeGraph** | **9** |
-| SubAgents | NLPPipeline, HallucinationCheck, AuditSample, SourceFeedback | **4** |
-| Supervisors | Ingestion, Quality | **2** |
+| Workers | Ingestion (4) + Infra (1) + Event (1) + NLP (5) + Intel (8: SourceCred, CyberThreat, Supplier, Sanctions, Network, CIB, **Verifier**, **Author**) + Claim | **21** |
+| Agents | Logging, Security, HealthCheck, Timeline, Swarm, MoE, Budget, Route, KnowledgeGraph | **9** |
+| SubAgents | NLPPipeline, HallucinationCheck, AuditSample, SourceFeedback, **RAGPipeline** | **5** |
+| Supervisors | Ingestion, Quality, **NLP**, **Intel** | **4** |
 | Orchestrator | Not implemented | 0 |
+
+Tests: **596 passing** (587 unit + 9 integration) | Schemas: **27** (VerificationResult #26, AuthorProfile #27)
 
 **Test count**: 524 passing, 99% coverage. Integration tests in `tests/integration/`.
 Dynamic audit is the source of count truth: `python -m geosupply.cli.audit --level strict`.

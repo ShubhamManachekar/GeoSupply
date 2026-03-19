@@ -16,7 +16,7 @@ description: Rapid worker scaffolding for GeoSupply Layer 5. Complete patterns f
 | Verification/RAG | LARGE_20B | Claim verification, brief synthesis | VerifierWorker |
 | CPU-only | CPU_ONLY | ML models, rule-based processing | ConflictWorker, StressWorker |
 
-## Implemented Intel Workers (Phase 4 — as of 2026-03-19)
+## Implemented Intel Workers (Phase 4 — COMPLETE as of 2026-03-19)
 | Worker | Tier | Schema | Status |
 |--------|------|--------|--------|
 | SourceCredWorker | 1 STATIC | SourceCredOutput | ✅ |
@@ -25,8 +25,8 @@ description: Rapid worker scaffolding for GeoSupply Layer 5. Complete patterns f
 | SanctionsWorker | 1 STATIC | SanctionsOutput | ✅ |
 | NetworkWorker | 2 | dict | ✅ |
 | CIBWorker | 2 | dict | ✅ |
-| VerifierWorker | 3 | - | ⬜ |
-| AuthorWorker | 3 | - | ⬜ |
+| VerifierWorker | 3 | VerificationResult (#26) | ✅ |
+| AuthorWorker | 3 | AuthorProfile (#27) | ✅ |
 
 ---
 
