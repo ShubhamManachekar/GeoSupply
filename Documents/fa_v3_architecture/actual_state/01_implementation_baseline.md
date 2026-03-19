@@ -3,9 +3,9 @@
 Date: March 19, 2026
 
 ## Code-Verified Counts
-- Workers implemented: 13
-- Agents implemented: 8
-- Subagents implemented: 2
+- Workers implemented: 19
+- Agents implemented: 9
+- Subagents implemented: 4
 - Supervisors implemented: 2
 - Orchestrator implementations: 0
 
@@ -30,11 +30,15 @@ Date: March 19, 2026
 - `src/geosupply/workers/propaganda_worker.py`
 - `src/geosupply/workers/translation_worker.py`
 
-### Intel Workers — Tier-1 STATIC (Phase 4)
-- `src/geosupply/workers/source_cred_worker.py`
-- `src/geosupply/workers/cyber_threat_worker.py`
+### Intel Workers — Phase 4
+- `src/geosupply/workers/source_cred_worker.py` (Tier-1 STATIC)
+- `src/geosupply/workers/cyber_threat_worker.py` (Tier-1 STATIC)
+- `src/geosupply/workers/supplier_worker.py` (Tier-1 STATIC)
+- `src/geosupply/workers/sanctions_worker.py` (Tier-1 STATIC)
+- `src/geosupply/workers/network_worker.py` (Tier-2)
+- `src/geosupply/workers/cib_worker.py` (Tier-2)
 
-## Implemented Agents (8)
+## Implemented Agents (9)
 - `src/geosupply/agents/logging_agent.py`
 - `src/geosupply/agents/security_agent.py`
 - `src/geosupply/agents/health_check_agent.py`
@@ -43,10 +47,13 @@ Date: March 19, 2026
 - `src/geosupply/agents/moe_router_agent.py`
 - `src/geosupply/agents/budget_manager_agent.py`
 - `src/geosupply/agents/route_manager_agent.py`
+- `src/geosupply/agents/knowledge_graph_agent.py` (Phase 7)
 
-## Implemented SubAgents (2) — Phase 5
+## Implemented SubAgents (4) — Phase 5
 - `src/geosupply/subagents/nlp_pipeline_subagent.py`
 - `src/geosupply/subagents/hallucination_check_subagent.py`
+- `src/geosupply/subagents/audit_sample_subagent.py`
+- `src/geosupply/subagents/source_feedback_subagent.py`
 
 ## Implemented Supervisors (2) — Phase 6
 - `src/geosupply/supervisors/ingestion_supervisor.py`
@@ -59,8 +66,9 @@ Date: March 19, 2026
 - Audit CLI baseline: `src/geosupply/cli/audit.py`
 
 ## Test Coverage
-- Total tests: 434 (all passing)
+- Total tests: 524 (all passing — 490 unit + 9 integration)
 - Coverage: 99%+ across all implemented components
+- Integration tests: `tests/integration/test_pipeline_integration.py`
 
 ## Status Label
-- Architecture maturity: Foundation + ingestion + NLP + intel workers + first subagent pair + first supervisor pair.
+- Architecture maturity: Foundation + ingestion + NLP + intel workers (6) + subagents (4) + supervisors (2) + KnowledgeGraphAgent + integration tests.

@@ -9,12 +9,29 @@ description: GeoSupply AI development conventions, architecture rules, and code 
 
 GeoSupply AI is an India-centric geopolitical supply chain intelligence platform with FA v3 documentation governance. Use `Documents/fa_v3_architecture/actual_state/` for implementation truth and `Documents/fa_v3_architecture/target_state/` for intended architecture.
 
-## Current Baseline (Restructured)
+## Current Baseline (Session 18–19 | 2026-03-19)
 
-- Implemented: 6 workers, 8 agents.
-- Manager-agent control plane slice exists at Layer 3: `SwarmManagerAgent`, `MoERouterAgent`, `BudgetManagerAgent`, `RouteManagerAgent`.
-- Not implemented yet: concrete subagents, supervisors, and orchestrator execution classes.
-- Dynamic audit is the source of count truth: `python -m geosupply.cli.audit --level strict`.
+| Layer | Component | Count |
+|-------|-----------|-------|
+| Workers | Ingestion (4) + Infra (1) + Event (1) + NLP (5) + Intel (6: Claim, SourceCred, CyberThreat, Supplier, Sanctions, Network/CIB) | **19** |
+| Agents | Logging, Security, HealthCheck, Timeline, Swarm, MoE, Budget, Route, **KnowledgeGraph** | **9** |
+| SubAgents | NLPPipeline, HallucinationCheck, AuditSample, SourceFeedback | **4** |
+| Supervisors | Ingestion, Quality | **2** |
+| Orchestrator | Not implemented | 0 |
+
+**Test count**: 524 passing, 99% coverage. Integration tests in `tests/integration/`.
+Dynamic audit is the source of count truth: `python -m geosupply.cli.audit --level strict`.
+
+### Phases Complete
+- ✅ Phase 0: Foundation (config, schemas, base classes)
+- ✅ Phase 1: Infrastructure (LoggingAgent, SecurityAgent, HealthCheckAgent)
+- ✅ Phase 2: Data Ingestion (NewsWorker, IndiaAPIWorker, TelegramWorker, AISWorker)
+- ✅ Phase 3: NLP Workers (Claim, NER, Sentiment, Propaganda, Translation)
+- 🟡 Phase 4: Intel Workers (SourceCred, CyberThreat, Supplier, Sanctions, Network, CIB — 6 of 8 done)
+- 🟡 Phase 5: SubAgent Layer (NLPPipeline, HallucinationCheck, AuditSample, SourceFeedback — 4 of 5 done)
+- 🟡 Phase 6: Supervisors (Ingestion, Quality — 2 of 14 done)
+- 🟡 Phase 7: KnowledgeGraphAgent (in-memory G5 dedup + write-buffer — pending production KG)
+- ✅ Phase 14: Audit/QA tooling
 
 ## Locked Rules (NEVER Override)
 
