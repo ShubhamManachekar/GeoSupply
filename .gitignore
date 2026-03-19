@@ -25,3 +25,7 @@ env/
 # OS artifacts
 .DS_Store
 Thumbs.db
+
+# GeoSupply runtime data (ChromaDB, SQLite, backups, logs)
+data/
+
