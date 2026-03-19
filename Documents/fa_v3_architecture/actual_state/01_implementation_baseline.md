@@ -2,12 +2,12 @@
 
 Date: March 19, 2026 (Session 21)
 
-## Code-Verified Counts
+## Code-Verified Counts — Session 22 (2026-03-19)
 - Workers implemented: 21
-- Agents implemented: 11
-- Subagents implemented: 7
-- Supervisors implemented: 4
-- Orchestrator implementations: 0
+- Agents implemented: 11 (SwarmManagerAgent now has decompose() / execute_dag() / route() + ROUTING_TABLE)
+- Subagents implemented: 10 (GraphRAGSubAgent, BriefSynthSubAgent, SemanticDriftMonitor added)
+- Supervisors implemented: 5 (InfraSupervisor added — watchdog.alert consumer)
+- Orchestrator implementations: 0 (SwarmMaster DAG routing in SwarmManagerAgent — not yet in dedicated orchestrator layer)
 
 ## Implemented Workers (21)
 
@@ -74,11 +74,27 @@ Date: March 19, 2026 (Session 21)
 - `src/geosupply/subagents/watchdog_subagent.py` — Rule 10; STUCK_BUSY/STUCK_ERROR/UNREACHABLE/RECOVERED alerts
 - `src/geosupply/subagents/source_cluster_subagent.py` — coordinated source detection via domain/style/penalty clustering
 
-## Implemented Supervisors (4) — Phase 6
+### Session 22 additions
+- `src/geosupply/subagents/graph_rag_subagent.py` — KG-enhanced RAG: entity extract → KG traversal → enrich query → vector search → merge/rerank → hallucination gate
+- `src/geosupply/subagents/brief_synth_subagent.py` — 3-proposer MoA + 4-level aggregation fallback + SQLite audit invariant
+- `src/geosupply/subagents/semantic_drift_monitor.py` — KL divergence per source channel; NORMAL/WARN/SUSPEND/SILENT alerts; publishes source.suspend / source.silent_alert events
+
+## Implemented Supervisors (5) — Phase 6 + Session 22
 - `src/geosupply/supervisors/ingestion_supervisor.py`
 - `src/geosupply/supervisors/quality_supervisor.py`
 - `src/geosupply/supervisors/nlp_supervisor.py` — with InputSanitiserWorker pre-gate (Session 21)
 - `src/geosupply/supervisors/intel_supervisor.py`
+- `src/geosupply/supervisors/infra_supervisor.py` — Session 22; subscribes to watchdog.alert; cannot be paused; manages 9 infra singletons
+
+## Gap Fixes Applied (Session 22)
+| Gap | Before | After |
+|-----|--------|-------|
+| InfraSupervisor missing | watchdog.alert events had no consumer | InfraSupervisor subscribes + restarts stuck agents |
+| SwarmMaster.decompose() missing | round-robin lane split only | decompose() + execute_dag() + route() + ROUTING_TABLE (21 entries) |
+| GraphRAGSubAgent missing | KG unused in retrieval | KG traversal integrated into RAG pipeline |
+| BriefSynthSubAgent missing | no MoA brief synthesis | 3-proposer MoA + 4-level fallback + SQLite audit invariant |
+| SemanticDriftMonitor missing | no source drift detection | KL divergence weekly monitor with NORMAL/WARN/SUSPEND/SILENT |
+| Schemas #30-32 missing | BriefProposal/DriftReport/DAGPlan undefined | Added to schemas.py + SCHEMA_VERSIONS in config.py |
 
 ## Gap Fixes Applied (Session 21)
 | Gap | Before | After |
@@ -100,26 +116,29 @@ Date: March 19, 2026 (Session 21)
 - Audit CLI baseline: `src/geosupply/cli/audit.py`
 
 ## Test Coverage
-- Total tests: 674 (all passing — unit + integration)
+- Total tests: 747 (all passing — unit + integration; +73 in Session 22)
 - Integration tests: `tests/integration/test_pipeline_integration.py`
 
 ## Schemas
-- Total schemas: 29
+- Total schemas: 32
   - #1-25: original schemas
   - #26: VerificationResult (VerifierWorker)
   - #27: AuthorProfile (AuthorWorker)
   - #28: WatchdogAlert (WatchdogSubAgent) — Session 21
   - #29: FactCheckResult (FactCheckAgent) — Session 21
+  - #30: BriefProposal (BriefSynthSubAgent) — Session 22
+  - #31: DriftReport (SemanticDriftMonitor) — Session 22
+  - #32: DAGPlan (SwarmManagerAgent.decompose) — Session 22
 - All schemas registered in ALL_SCHEMAS and SCHEMA_VERSIONS (audit-verified)
 
 ## Status Label
-Foundation + ingestion + NLP + intel workers (8/8) + subagents (7/13) + supervisors (4/14)
+Foundation + ingestion + NLP + intel workers (21/21) + subagents (10/13) + supervisors (5/14)
 + KnowledgeGraphAgent with SQLite + FactCheckAgent + SummarizationAuditAgent
-+ integration tests + all G3 security fixes applied.
++ InfraSupervisor + SwarmMaster DAG routing + GraphRAGSubAgent + BriefSynthSubAgent
++ SemanticDriftMonitor + integration tests + all G3 security fixes applied.
 
-## Remaining High-Priority Items (→ target_state/09_component_design_backlog.md)
-1. InfraSupervisor (P0) — watchdog.alert subscriber + restart handler
-2. SwarmMaster.decompose() + DAG routing (P0) — no end-to-end pipeline yet
-3. GraphRAGSubAgent (P1) — KG-enhanced vector retrieval
-4. BriefSynthSubAgent (P1) — 3-proposer MoA + 4-level fallback
-5. SemanticDriftMonitor (P2) — weekly KL divergence on source channels
+## Remaining Items (after Session 22)
+1. Orchestrator (SwarmMaster class) — SwarmManagerAgent has decompose/execute_dag/route but no dedicated Layer 1 orchestrator class yet
+2. 9 remaining supervisors (MLSupervisor, IndiaSupervisor, DashboardSupervisor, DevSupervisor, TestSupervisor, TechSupervisor, MarketingSupervisor, LoopholeHunterSupervisor, DisasterRecoverySupervisor)
+3. 3 remaining subagents (OverridePatternSubAgent, MoAFallbackSubAgent, PenetrationTestSubAgent)
+4. End-to-end integration test: full SUPPLY_BRIEF pipeline via execute_dag
