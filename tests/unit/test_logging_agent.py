@@ -1,5 +1,6 @@
 """Unit tests for LoggingAgent — SQLite logging, EventBus subscription, queries."""
 
+import os
 import pytest
 import tempfile
 from pathlib import Path
@@ -9,7 +10,9 @@ from geosupply.schemas import Event
 
 @pytest.fixture
 async def agent():
-    db = Path(tempfile.mktemp(suffix=".db"))
+    fd, tmp = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    db = Path(tmp)
     a = LoggingAgent(db_path=db)
     await a.setup()
     yield a
@@ -146,8 +149,9 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_auto_setup_on_log(self):
         """L132: log() auto-initializes DB when _conn is None."""
-        import tempfile
-        db = Path(tempfile.mktemp(suffix=".db"))
+        fd, tmp = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+        db = Path(tmp)
         a = LoggingAgent(db_path=db)
         assert a._conn is None
         ok = await a.log(event_type="TEST", source="test", trace_id="auto")
@@ -173,8 +177,9 @@ class TestEdgeCases:
         agent._conn.close()
         agent._conn = None
         # Create a new agent with invalid path to force DB error
-        import tempfile, os
-        bad_path = Path(tempfile.mktemp(suffix=".db"))
+        fd2, tmp2 = tempfile.mkstemp(suffix=".db")
+        os.close(fd2)
+        bad_path = Path(tmp2)
         bad = LoggingAgent(db_path=bad_path)
         await bad.setup()
         # Drop the table to force an INSERT error
