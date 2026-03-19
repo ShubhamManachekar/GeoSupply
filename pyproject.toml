@@ -26,6 +26,7 @@ dependencies = [
     "cryptography>=41.0.0",
     "tenacity>=8.2.0",
     "structlog>=23.0.0",
+    "colorama>=0.4.6",
 ]
 
 [project.optional-dependencies]
@@ -38,7 +39,7 @@ dev = [
 ]
 
 [project.scripts]
-geosupply = "geosupply.cli.main:app"
+geosupply = "geosupply.cli.audit:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

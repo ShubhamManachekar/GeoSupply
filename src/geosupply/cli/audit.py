@@ -183,7 +183,7 @@ def main():
     strict_mode = args.level == "strict"
     
     print(f"\n{Fore.MAGENTA}==================================================")
-    print(f"GeoSupply v10 Audit System (Level: {args.level.upper()})")
+    print(f"GeoSupply FA v3 Audit System (Level: {args.level.upper()})")
     print(f"=================================================={Style.RESET_ALL}")
     
     workers, agents, subagents = discover_components()

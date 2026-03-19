@@ -1,4 +1,4 @@
-# GeoSupply AI — Pinned Dependencies (FA v1)
+# GeoSupply AI — Pinned Dependencies (FA v3)
 # Install: pip install -r requirements.txt
 # Dev:     pip install -r requirements.txt -e ".[dev]"
 
@@ -31,6 +31,9 @@ tenacity>=8.2.0
 
 # Logging
 structlog>=23.0.0
+
+# CLI
+colorama>=0.4.6
 
 # Dev/Test
 pytest>=7.4.0

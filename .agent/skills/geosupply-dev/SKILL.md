@@ -9,17 +9,17 @@ description: GeoSupply AI development conventions, architecture rules, and code 
 
 GeoSupply AI is an India-centric geopolitical supply chain intelligence platform with FA v3 documentation governance. Use `Documents/fa_v3_architecture/actual_state/` for implementation truth and `Documents/fa_v3_architecture/target_state/` for intended architecture.
 
-## Current Baseline (Session 21 | 2026-03-19)
+## Current Baseline (Session 22 | 2026-03-19)
 
 | Layer | Component | Count |
 |-------|-----------|-------|
-| Workers | Ingestion (4) + Infra (1) + Event (1) + NLP (5) + Intel (8) + Claim + InputSanitiser | **21** |
-| Agents | Logging, Security, HealthCheck, Timeline, Swarm, MoE, Budget, Route, KnowledgeGraph, **FactCheck**, **SummarizationAudit** | **11** |
-| SubAgents | NLPPipeline, HallucinationCheck, AuditSample, SourceFeedback, RAGPipeline, **Watchdog**, **SourceCluster** | **7** |
-| Supervisors | Ingestion, Quality, NLP (+ InputSanitiser pre-gate), Intel | **4** |
-| Orchestrator | Not implemented | 0 |
+| Workers | Ingestion (4) + Infra (1) + Event (1) + NLP (5) + Intel (8) | **19** |
+| Agents | Logging, Security, HealthCheck, Timeline, Swarm, MoE, Budget, Route, KnowledgeGraph, FactCheck, SummarizationAudit | **11** |
+| SubAgents | NLPPipeline, HallucinationCheck, AuditSample, SourceFeedback, RAGPipeline, Watchdog, SourceCluster, **GraphRAG**, **BriefSynth**, **SemanticDriftMonitor** | **10** |
+| Supervisors | Ingestion, Quality, NLP (+ InputSanitiser pre-gate), Intel, **Infra** | **5** |
+| Orchestrator | SwarmManagerAgent has decompose()/execute_dag()/route() — no dedicated class yet | 0 |
 
-Tests: **674 passing** | Schemas: **29** (WatchdogAlert #28, FactCheckResult #29)
+Tests: **747 passing** | Schemas: **32** (up to DAGPlan #32)
 
 ## Gap Fixes Applied (Session 21)
 | Gap | Fix | Location |
@@ -32,31 +32,36 @@ Tests: **674 passing** | Schemas: **29** (WatchdogAlert #28, FactCheckResult #29
 | SourceClusterSubAgent missing | `SourceClusterSubAgent` — domain/style/penalty clustering | `subagents/source_cluster_subagent.py` |
 | SummarizationAuditAgent missing | `SummarizationAuditAgent` — severity band distortion check | `agents/summarization_audit_agent.py` |
 
-**Test count**: 674 passing. Integration tests in `tests/integration/`.
+## Gap Fixes Applied (Session 22)
+| Gap | Fix | Location |
+|-----|-----|----------|
+| InfraSupervisor missing | `InfraSupervisor` — watchdog.alert consumer, cannot be paused, 9 infra singletons | `supervisors/infra_supervisor.py` |
+| SwarmMaster.decompose() missing | `decompose()` + `execute_dag()` + `route()` + ROUTING_TABLE (21 entries) + SUPPLY_BRIEF template | `agents/swarm_manager_agent.py` |
+| GraphRAGSubAgent missing | KG traversal + vector search + merge/rerank + hallucination gate | `subagents/graph_rag_subagent.py` |
+| BriefSynthSubAgent missing | 3-proposer MoA + 4-level fallback + SQLite audit invariant | `subagents/brief_synth_subagent.py` |
+| SemanticDriftMonitor missing | KL divergence per source channel; NORMAL/WARN/SUSPEND/SILENT | `subagents/semantic_drift_monitor.py` |
+
+**Test count**: 747 passing. Integration tests in `tests/integration/`.
 Dynamic audit is the source of count truth: `python -m geosupply.cli.audit --level strict`.
 
-### Phases Complete (Session 21)
-- ✅ Phase 0: Foundation (config, 29 schemas, base classes + G3 BaseAgent.handle_event)
+### Phases Complete (Session 22)
+- ✅ Phase 0: Foundation (config, 32 schemas, base classes + G3 BaseAgent.handle_event)
 - ✅ Phase 1: Infrastructure (LoggingAgent, SecurityAgent, HealthCheckAgent, EventBus.verify_event)
-- ✅ Phase 2: Data Ingestion (NewsWorker, IndiaAPIWorker, TelegramWorker, AISWorker + InputSanitiser now wired in NLPSupervisor)
+- ✅ Phase 2: Data Ingestion (NewsWorker, IndiaAPIWorker, TelegramWorker, AISWorker + InputSanitiser wired in NLPSupervisor)
 - ✅ Phase 3: NLP Workers (Claim, NER, Sentiment, Propaganda, Translation)
-- ✅ Phase 4: Intel Workers (all 8/8: SourceCred, CyberThreat, Supplier, Sanctions, Network, CIB, Verifier, Author)
-- 🟡 Phase 5-6: SubAgents (7/13) + Supervisors (4/14)
+- ✅ Phase 4: Intel Workers (all 8/8)
+- 🟡 Phase 5-6: SubAgents (10/13) + Supervisors (5/14)
 - 🟡 Phase 7: KnowledgeGraphAgent + G5 dedup + SQLite persistence (NetworkX/ChromaDB planned)
+- 🟡 Phase 8: SwarmMaster DAG routing (in SwarmManagerAgent, not dedicated orchestrator class)
 - ✅ Phase 14: Audit/QA tooling
 
-### Remaining P0 Items (Next Session — blocks end-to-end pipeline)
-1. **InfraSupervisor** — subscribes to `watchdog.alert`; restarts stuck agents; CANNOT be paused.
-   - Design: `Documents/fa_v3_architecture/target_state/09_component_design_backlog.md §Item1`
-2. **SwarmMaster.decompose() + DAG routing** — topological sort + ROUTING_TABLE 50+ entries.
-   - Design: `Documents/fa_v3_architecture/target_state/09_component_design_backlog.md §Item4`
+### Remaining P0 Items (blocks end-to-end pipeline)
+1. **Dedicated Orchestrator class** — SwarmManagerAgent has the methods but no standalone Layer 1 orchestrator.
+2. **9 remaining supervisors** — MLSupervisor, IndiaSupervisor, DashboardSupervisor, DevSupervisor, TestSupervisor, TechSupervisor, MarketingSupervisor, LoopholeHunterSupervisor, DisasterRecoverySupervisor.
 
 ### Remaining P1 Items
-3. **GraphRAGSubAgent** — KG entity traversal + ChromaDB hybrid; confidence ≥ HALLUCINATION_FLOOR
-4. **BriefSynthSubAgent** — 3-proposer MoA + 4-level fallback; SQLite proposal audit invariant
-
-### Remaining P2 Items
-5. **SemanticDriftMonitor** — KL divergence KL>0.30=WARN, KL>0.60=SUSPEND; weekly schedule
+3. **3 remaining subagents** — OverridePatternSubAgent, MoAFallbackSubAgent, PenetrationTestSubAgent.
+4. **End-to-end integration test** — full SUPPLY_BRIEF pipeline via execute_dag.
 
 ## Locked Rules (NEVER Override)
 

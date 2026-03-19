@@ -50,12 +50,12 @@ INFRA_LOG       → InfraSupervisor → LoggingAgent
 ```
 
 ### Implementation Checklist
-- [ ] `src/geosupply/supervisors/infra_supervisor.py`
-- [ ] `tests/unit/test_infra_supervisor.py`
-- [ ] Subscribe to `watchdog.alert` in `__init__`
-- [ ] `dispatch()` must not honor `pause()` (override pause guard)
-- [ ] INFRA_RESTART event logged via LoggingAgent on every restart attempt
-- [ ] Health report publishable on INFRA_HEALTH task
+- [x] `src/geosupply/supervisors/infra_supervisor.py`
+- [x] `tests/unit/test_infra_supervisor.py`
+- [x] Subscribe to `watchdog.alert` in `__init__`
+- [x] `dispatch()` must not honor `pause()` (override pause guard)
+- [x] INFRA_RESTART event logged via LoggingAgent on every restart attempt
+- [x] Health report publishable on INFRA_HEALTH task
 
 ---
 
@@ -109,12 +109,12 @@ Parallel steps: {kg_traversal} (for multi-entity)
 - Total: ₹0.0 per query (Tier-0 only)
 
 ### Implementation Checklist
-- [ ] `src/geosupply/subagents/graph_rag_subagent.py`
-- [ ] `tests/unit/test_graph_rag_subagent.py`
-- [ ] KnowledgeGraphAgent injected (or stub-callable) in `__init__`
-- [ ] ChromaDB client injected (or mocked in tests)
-- [ ] HALLUCINATION_FLOOR check on merged confidence
-- [ ] Graceful fallback: if KG has no entity → vector-only path
+- [x] `src/geosupply/subagents/graph_rag_subagent.py`
+- [x] `tests/unit/test_graph_rag_subagent.py`
+- [x] KnowledgeGraphAgent injected (or stub-callable) in `__init__`
+- [x] ChromaDB client injected (or mocked in tests)
+- [x] HALLUCINATION_FLOOR check on merged confidence
+- [x] Graceful fallback: if KG has no entity → vector-only path
 
 ---
 
@@ -182,13 +182,13 @@ INTERNAL_BREAKER_MAX_FAILURES = 3
 ```
 
 ### Implementation Checklist
-- [ ] `src/geosupply/subagents/brief_synth_subagent.py`
-- [ ] `tests/unit/test_brief_synth_subagent.py`
-- [ ] SQLite `briefs` table: `(id, trace_id, proposal_text, confidence, proposer_tier, created_at)`
-- [ ] All 3 proposals persisted BEFORE aggregation (audit invariant)
-- [ ] 4-level MoA fallback with level tracking
-- [ ] Internal circuit breaker (timeout=60s, max_failures=3)
-- [ ] HALLUCINATION_FLOOR enforcement at Step 4
+- [x] `src/geosupply/subagents/brief_synth_subagent.py`
+- [x] `tests/unit/test_brief_synth_subagent.py`
+- [x] SQLite `briefs` table: `(id, trace_id, proposal_text, confidence, proposer_tier, created_at)`
+- [x] All 3 proposals persisted BEFORE aggregation (audit invariant)
+- [x] 4-level MoA fallback with level tracking
+- [x] Internal circuit breaker (timeout=60s, max_failures=3)
+- [x] HALLUCINATION_FLOOR enforcement at Step 4
 
 ---
 
@@ -290,12 +290,12 @@ SUPPLY_BRIEF compound task decomposes to:
 ```
 
 ### Implementation Checklist
-- [ ] Add `decompose()` to `SwarmManagerAgent`
-- [ ] Add `execute_dag()` with topological sort
-- [ ] Add `route()` with ROUTING_TABLE lookup
-- [ ] `tests/unit/test_swarm_manager_agent.py` — extend with DAG tests
-- [ ] SUPPLY_BRIEF decomposition template as class constant
-- [ ] Budget check before each `supervisor.dispatch()` call
+- [x] Add `decompose()` to `SwarmManagerAgent`
+- [x] Add `execute_dag()` with topological sort
+- [x] Add `route()` with ROUTING_TABLE lookup
+- [x] `tests/unit/test_swarm_manager_agent.py` — extend with DAG tests
+- [x] SUPPLY_BRIEF decomposition template as class constant
+- [x] Budget check before each `supervisor.dispatch()` call
 
 ---
 
@@ -373,14 +373,14 @@ no messages in 7 days        → SILENT (alert admin — source may be compromis
 ```
 
 ### Implementation Checklist
-- [ ] `src/geosupply/subagents/semantic_drift_monitor.py`
-- [ ] `tests/unit/test_semantic_drift_monitor.py`
-- [ ] `kl_divergence()` with epsilon smoothing (pure Python, no LLM)
-- [ ] Uses `ChannelFingerprint` schema (#19) for baseline storage reference
-- [ ] SUSPEND action publishes `Event(topic="source.suspend", ...)` to EventBus
-- [ ] SILENT action publishes `Event(topic="source.silent_alert", ...)` to EventBus
-- [ ] Schedule: runs as part of DisasterRecoverySupervisor weekly cycle
-- [ ] Baseline validation: requires `CHANNEL_BASELINE_MIN_MESSAGES` before checking
+- [x] `src/geosupply/subagents/semantic_drift_monitor.py`
+- [x] `tests/unit/test_semantic_drift_monitor.py`
+- [x] `kl_divergence()` with epsilon smoothing (pure Python, no LLM)
+- [x] Uses `ChannelFingerprint` schema (#19) for baseline storage reference
+- [x] SUSPEND action publishes `Event(topic="source.suspend", ...)` to EventBus
+- [x] SILENT action publishes `Event(topic="source.silent_alert", ...)` to EventBus
+- [x] Schedule: runs as part of DisasterRecoverySupervisor weekly cycle
+- [x] Baseline validation: requires `CHANNEL_BASELINE_MIN_MESSAGES` before checking
 
 ---
 

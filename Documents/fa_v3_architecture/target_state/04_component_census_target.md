@@ -11,12 +11,12 @@
 - Supervisors: 14 (Planned)
 - Orchestrator: 1 (Planned)
 
-## Current Baseline Comparison
-- Workers: 6 implemented
-- Agents: 4 implemented
-- SubAgents: 0 implemented
-- Supervisors: 0 implemented
-- Orchestrator: 0 implemented
+## Current Baseline Comparison (Updated: Session 22 — 2026-03-19)
+- Workers: 19 implemented (of 45 planned)
+- Agents: 11 implemented (of 39 planned)
+- SubAgents: 10 implemented (of 15 planned)
+- Supervisors: 5 implemented (of 14 planned)
+- Orchestrator: 0 implemented (DAG routing exists in SwarmManagerAgent, not dedicated class)
 
 ## Rule
 Target census is never used as an implementation claim; only `actual_state/*` can assert implemented counts.

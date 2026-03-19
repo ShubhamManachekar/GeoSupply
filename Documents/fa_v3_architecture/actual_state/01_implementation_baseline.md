@@ -3,13 +3,13 @@
 Date: March 19, 2026 (Session 21)
 
 ## Code-Verified Counts — Session 22 (2026-03-19)
-- Workers implemented: 21
+- Workers implemented: 19
 - Agents implemented: 11 (SwarmManagerAgent now has decompose() / execute_dag() / route() + ROUTING_TABLE)
 - Subagents implemented: 10 (GraphRAGSubAgent, BriefSynthSubAgent, SemanticDriftMonitor added)
 - Supervisors implemented: 5 (InfraSupervisor added — watchdog.alert consumer)
 - Orchestrator implementations: 0 (SwarmMaster DAG routing in SwarmManagerAgent — not yet in dedicated orchestrator layer)
 
-## Implemented Workers (21)
+## Implemented Workers (19)
 
 ### Ingestion Workers (Phase 2)
 - `src/geosupply/workers/news_worker.py`
@@ -61,7 +61,7 @@ Date: March 19, 2026 (Session 21)
 - `src/geosupply/agents/fact_check_agent.py` — FACT_CHECK, CLAIM_VERIFY, EVIDENCE_SCORE, QUARANTINE_BRIEF
 - `src/geosupply/agents/summarization_audit_agent.py` — SUMMARIZATION_AUDIT, DISTORTION_CHECK, BAND_VERIFY
 
-## Implemented SubAgents (7)
+## Implemented SubAgents (10)
 
 ### Phase 5 (original)
 - `src/geosupply/subagents/nlp_pipeline_subagent.py`
@@ -109,7 +109,7 @@ Date: March 19, 2026 (Session 21)
 
 ## Implemented Core Contracts
 - Config and locked constants: `src/geosupply/config.py`
-- Schemas: `src/geosupply/schemas.py` (29 schemas — WatchdogAlert #28, FactCheckResult #29)
+- Schemas: `src/geosupply/schemas.py` (32 schemas — up to DAGPlan #32)
 - Base classes and decorators: `src/geosupply/core/*.py`
   - `base_agent.py`: handle_event() with G3 HMAC verification (Session 21)
   - `event_bus.py`: verify_event() public interface (Session 21)
@@ -132,7 +132,7 @@ Date: March 19, 2026 (Session 21)
 - All schemas registered in ALL_SCHEMAS and SCHEMA_VERSIONS (audit-verified)
 
 ## Status Label
-Foundation + ingestion + NLP + intel workers (21/21) + subagents (10/13) + supervisors (5/14)
+Foundation + ingestion + NLP + intel workers (19/19) + subagents (10/13) + supervisors (5/14)
 + KnowledgeGraphAgent with SQLite + FactCheckAgent + SummarizationAuditAgent
 + InfraSupervisor + SwarmMaster DAG routing + GraphRAGSubAgent + BriefSynthSubAgent
 + SemanticDriftMonitor + integration tests + all G3 security fixes applied.

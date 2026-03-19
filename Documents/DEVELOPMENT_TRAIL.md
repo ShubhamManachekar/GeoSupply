@@ -1,5 +1,5 @@
 # GeoSupply AI — Development Trail & Context Handoff
-## FA v3 Baseline | Last Updated: 2026-03-08 23:58 IST | Classification: Internal
+## FA v3 Baseline | Last Updated: 2026-03-19 23:31 IST | Classification: Internal
 
 > **PURPOSE**: Single source of truth for any AI model (Claude, Antigravity, Copilot, or future tool) to pick up development context instantly. **Update after EVERY session.**
 
@@ -13,10 +13,12 @@ ARCHITECTURE:   FA v3 (canonical docs), with FA v2/v10/v9 retained as reference 
 LANGUAGE:       Python 3.10+, async/await, Pydantic v2, type hints everywhere
 BUDGET CAP:     ₹500/month (LOCKED — all costs in INR, never USD)
 HALLUCINATION:  FLOOR = 0.70 (LOCKED — never lower)
-STATUS:         Session 21 | Workers:21 | Agents:11 | SubAgents:7 | Supervisors:4/14 | Tests:674
-                Gap fixes: WatchdogSubAgent(Rule10), InputSanitiser wired(NLP), G3 BaseAgent.handle_event,
-                           KG SQLite persistence, FactCheckAgent, SourceClusterSubAgent, SummarizationAuditAgent
-                Next P0:   InfraSupervisor (watchdog consumer), SwarmMaster.decompose()+DAG routing
+STATUS:         Session 22 | Workers:19 | Agents:11 | SubAgents:10 | Supervisors:5/14 | Tests:747 | Schemas:32
+                Session 22: InfraSupervisor, SwarmMaster.decompose()+DAG, GraphRAGSubAgent,
+                            BriefSynthSubAgent, SemanticDriftMonitor, schemas #30-32
+                Session 21: WatchdogSubAgent(Rule10), InputSanitiser wired(NLP), G3 BaseAgent.handle_event,
+                            KG SQLite persistence, FactCheckAgent, SourceClusterSubAgent, SummarizationAuditAgent
+                Next P0:   Remaining 9 supervisors, Orchestrator layer, end-to-end SUPPLY_BRIEF pipeline
 DOCS LOCATION:  Documents/fa_v3_architecture/ (actual_state + target_state + governance)
 ```
 
@@ -37,7 +39,7 @@ f:\GeoSupply\
 ├── .env.example                    ← All 42+ API keys template
 ├── src\geosupply\
 │   ├── config.py                   ← All constants, thresholds, locked values
-│   ├── schemas.py                  ← 25 schema registry entries (+ timeline schemas in code)
+│   ├── schemas.py                  ← 32 schema registry entries
 │   ├── core\
 │   │   ├── base_worker.py          ← BaseWorker with safe_process() + retry + WorkerError
 │   │   ├── base_subagent.py        ← BaseSubAgent with G1 lifecycle + parallel execution
@@ -45,10 +47,10 @@ f:\GeoSupply\
 │   │   ├── base_supervisor.py      ← BaseSupervisor with 4-gate dispatch
 │   │   ├── event_bus.py            ← EventBus with G3 HMAC-SHA256 signing
 │   │   └── decorators.py           ← @tracer, @cost_tracker, @retry, @timeout, @breaker
-│   ├── workers\                    ← 6 implemented workers (Phase 2 + extras)
-│   ├── subagents\                  ← 0 concrete implementations
-│   ├── agents\                     ← 8 implemented agents
-│   ├── supervisors\                ← 0 concrete implementations
+│   ├── workers\                    ← 19 implemented workers (Phase 1-4)
+│   ├── subagents\                  ← 10 implemented subagents (Phase 5 + Session 21-22)
+│   ├── agents\                     ← 11 implemented agents (Phase 0-1, 6, 7)
+│   ├── supervisors\                ← 5 implemented supervisors (Phase 6 + Session 22)
 │   ├── orchestrator\               ← no concrete SwarmMaster implementation yet
 │   ├── cli\                        ← Admin CLI (Phase 9)
 │   └── portal\                     ← Streamlit portal (Phase 9)
@@ -922,4 +924,83 @@ When switching AI models, the incoming model MUST:
 - Phase 7 full: NetworkX DiGraph integration in KnowledgeGraphAgent + ChromaDB embeddings
 - Phase 8: SwarmMaster orchestrator MVP (DAG scheduler, degraded-mode, full end-to-end)
 - Phase 9: GeoRiskScore aggregation pipeline
+
+---
+
+### Session 21 — Gap Fixes: WatchdogSubAgent + G3 Security + KG Persistence + Quality Agents
+**Date**: 2026-03-19 IST
+**Model**: Claude Sonnet 4.6 | **Phases**: Gap-fix session (Phases 5, 6, 7, 14)
+
+**Done**:
+1. **WatchdogSubAgent** (Rule 10) — polls all registered agents for STUCK_BUSY/STUCK_ERROR/UNREACHABLE/RECOVERED; asyncio.sleep(0) polling cycle.
+2. **InputSanitiserWorker wired into NLPSupervisor** — pre-gate rejects injection attempts before Tier-1 NLP workers process text.
+3. **G3 Security — BaseAgent.handle_event()** — HMAC receive-side verification via EventBus.verify_event().
+4. **KnowledgeGraphAgent SQLite persistence** — setup(db_path) loads triples from SQLite; flush writes to disk.
+5. **FactCheckAgent** — FACT_CHECK, CLAIM_VERIFY, EVIDENCE_SCORE, QUARANTINE_BRIEF; enforces HALLUCINATION_FLOOR.
+6. **SourceClusterSubAgent** — coordinated source detection via domain/style/penalty clustering (Union-Find).
+7. **SummarizationAuditAgent** — SUMMARIZATION_AUDIT, DISTORTION_CHECK, BAND_VERIFY; severity band distortion check.
+8. **Schemas** — Added WatchdogAlert (#28), FactCheckResult (#29).
+
+**Files created**:
+- `src/geosupply/subagents/watchdog_subagent.py`
+- `src/geosupply/subagents/source_cluster_subagent.py`
+- `src/geosupply/agents/fact_check_agent.py`
+- `src/geosupply/agents/summarization_audit_agent.py`
+- `tests/unit/test_watchdog_subagent.py`
+- `tests/unit/test_source_cluster_subagent.py`
+- `tests/unit/test_fact_check_agent.py`
+- `tests/unit/test_summarization_audit_agent.py`
+
+**Files modified**:
+- `src/geosupply/core/base_agent.py` — handle_event() with G3 HMAC verification
+- `src/geosupply/core/event_bus.py` — verify_event() public interface
+- `src/geosupply/agents/knowledge_graph_agent.py` — SQLite persistence
+- `src/geosupply/supervisors/nlp_supervisor.py` — InputSanitiserWorker pre-gate
+- `src/geosupply/schemas.py` — WatchdogAlert + FactCheckResult schemas
+- `src/geosupply/config.py` — SCHEMA_VERSIONS #28-29
+- `Documents/fa_v3_architecture/actual_state/01_implementation_baseline.md`
+
+**Stats**: 674 tests passed (up from 596), 0 failures, 99% coverage. Workers: 19, Agents: 11, SubAgents: 7, Supervisors: 4.
+
+**Next priorities**:
+- InfraSupervisor (watchdog alert consumer — safety-critical)
+- SwarmMaster.decompose() + DAG routing
+- GraphRAGSubAgent, BriefSynthSubAgent, SemanticDriftMonitor
+
+---
+
+### Session 22 — Phase 6/8 Completion: InfraSupervisor + SwarmMaster DAG + GraphRAG + BriefSynth + SemanticDrift
+**Date**: 2026-03-19 IST
+**Model**: Claude Sonnet 4.6 | **Phases**: 6 (5/14) + 8 (DAG partial)
+
+**Done**:
+1. **InfraSupervisor** — manages 9 infra singletons; subscribes to watchdog.alert; autonomous recovery; cannot be paused (override pause guard); ₹2/cycle budget.
+2. **SwarmManagerAgent — decompose() + execute_dag() + route()** — ROUTING_TABLE (21 entries); SUPPLY_BRIEF template (10-step DAG); topological sort execution with asyncio.gather parallelism.
+3. **GraphRAGSubAgent** — KG-enhanced RAG: entity extraction → KG traversal → enrich query → vector search → merge/rerank → hallucination gate; graceful fallback to vector-only.
+4. **BriefSynthSubAgent** — 3-proposer MoA (Tier-1/2/3 parallel) + 4-level aggregation fallback + SQLite audit invariant (all proposals saved BEFORE aggregation).
+5. **SemanticDriftMonitor** — KL divergence per source channel; NORMAL/WARN/SUSPEND/SILENT alert levels; publishes source.suspend / source.silent_alert events to EventBus.
+6. **Schemas** — Added BriefProposal (#30), DriftReport (#31), DAGPlan (#32).
+
+**Files created**:
+- `src/geosupply/supervisors/infra_supervisor.py`
+- `src/geosupply/agents/swarm_manager_agent.py` (extended with decompose/DAG/route)
+- `src/geosupply/subagents/graph_rag_subagent.py`
+- `src/geosupply/subagents/brief_synth_subagent.py`
+- `src/geosupply/subagents/semantic_drift_monitor.py`
+- `tests/unit/test_infra_supervisor.py`
+- `tests/unit/test_graph_rag_subagent.py`
+- `tests/unit/test_brief_synth_subagent.py`
+- `tests/unit/test_semantic_drift_monitor.py`
+
+**Files modified**:
+- `src/geosupply/schemas.py` — BriefProposal + DriftReport + DAGPlan schemas
+- `src/geosupply/config.py` — SCHEMA_VERSIONS #30-32
+- `Documents/fa_v3_architecture/actual_state/01_implementation_baseline.md`
+
+**Stats**: 747 tests passed (up from 674), 0 failures, 99% coverage. Workers: 19, Agents: 11, SubAgents: 10, Supervisors: 5.
+
+**Next priorities**:
+- Phase 6 remaining: 9 supervisors (MLSupervisor, IndiaSupervisor, DashboardSupervisor, DevSupervisor, TestSupervisor, TechSupervisor, MarketingSupervisor, LoopholeHunterSupervisor, DisasterRecoverySupervisor)
+- Phase 8 remaining: Dedicated orchestrator layer (SwarmMaster class)
+- End-to-end integration test: full SUPPLY_BRIEF pipeline via execute_dag
 
