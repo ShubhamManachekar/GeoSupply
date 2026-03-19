@@ -851,3 +851,47 @@ When switching AI models, the incoming model MUST:
 - Phase 7 full: NetworkX DiGraph + ChromaDB vector store + SQLite provenance
 - Phase 8: SwarmMaster orchestrator MVP
 
+---
+
+### Session 20 — Phase 4/5/6 Completion: Tier-3 Workers + RAGPipeline + NLP/Intel Supervisors
+**Date**: 2026-03-19 IST
+**Model**: Claude Sonnet 4.6 | **Phases**: 4 (8/8 ✅) + 5 (5/5 ✅) + 6 (4/14)
+
+**Done**:
+1. **Phase 4 — Intel Workers COMPLETE (8/8)**:
+   - `VerifierWorker` (Tier-3) — multi-signal claim verification: corroboration/contradiction/hedging analysis; VERIFIED/REFUTED/UNVERIFIABLE/INSUFFICIENT_EVIDENCE verdicts; statistical claim numeric matching; 5-source extraction.
+   - `AuthorWorker` (Tier-3) — stylometric author attribution: bot probability (5-signal), state-sponsor detection (5-pattern), vocabulary richness, sentence variance; HUMAN/BOT/STATE_SPONSORED/UNKNOWN classification.
+2. **Phase 5 — SubAgents COMPLETE (5/5)**:
+   - `RAGPipelineSubAgent` — ChromaDB dense retrieval (with keyword fallback); NER+Claim parallel extraction for entity-enhanced queries; top-k reranking; HALLUCINATION_FLOOR faithfulness check; 6-step pipeline.
+3. **Phase 6 — Supervisors (4/14)**:
+   - `NLPSupervisor` — 5-agent routing (Sentiment/NER/Claim/Translation/Propaganda); ₹8/cycle; `capable_agents()` capability index.
+   - `IntelSupervisor` — 6-agent routing (Supplier/Sanctions/SourceCred/Cyber/Verifier/Author); ₹20/cycle; Tier-3 budget pre-check gate; `tier3_agents()` helper.
+4. **Schemas** — Added `VerificationResult` (#26) and `AuthorProfile` (#27); SCHEMA_VERSIONS updated; ALL_SCHEMAS = 27; all audit tests pass.
+5. **72 new tests** — VerifierWorker (13), AuthorWorker (13), RAGPipelineSubAgent (11), NLPSupervisor (17), IntelSupervisor (18).
+
+**Files created**:
+- `src/geosupply/workers/verifier_worker.py`
+- `src/geosupply/workers/author_worker.py`
+- `src/geosupply/subagents/rag_pipeline_subagent.py`
+- `src/geosupply/supervisors/nlp_supervisor.py`
+- `src/geosupply/supervisors/intel_supervisor.py`
+- `tests/unit/test_verifier_worker.py`
+- `tests/unit/test_author_worker.py`
+- `tests/unit/test_rag_pipeline_subagent.py`
+- `tests/unit/test_nlp_supervisor.py`
+- `tests/unit/test_intel_supervisor.py`
+
+**Files modified**:
+- `src/geosupply/schemas.py` — VerificationResult + AuthorProfile schemas
+- `src/geosupply/config.py` — SCHEMA_VERSIONS entries for #26/#27
+- `tests/unit/test_schemas.py` — Updated schema count from 25 to 27
+- `Documents/fa_v3_architecture/actual_state/01_implementation_baseline.md`
+
+**Stats**: 596 tests passed (up from 524), 0 failures, 99% coverage. Workers: 21, Agents: 9, SubAgents: 5, Supervisors: 4.
+
+**Next priorities**:
+- Phase 6 remaining: `MLSupervisor`, `IndiaSupervisor`, `DashboardSupervisor`, `InfraSupervisor` (10 more)
+- Phase 7 full: NetworkX DiGraph integration in KnowledgeGraphAgent + ChromaDB embeddings
+- Phase 8: SwarmMaster orchestrator MVP (DAG scheduler, degraded-mode, full end-to-end)
+- Phase 9: GeoRiskScore aggregation pipeline
+

@@ -1,4 +1,4 @@
-"""Unit tests for all 23 Pydantic schemas — validation, schema_version, dedup_key."""
+"""Unit tests for all 27 Pydantic schemas — validation, schema_version, dedup_key."""
 
 import pytest
 from datetime import datetime
@@ -16,7 +16,8 @@ from geosupply.schemas import (
 
 class TestSchemaCount:
     def test_25_schemas_registered(self):
-        assert len(ALL_SCHEMAS) == 25
+        # 25 original + VerificationResult (#26) + AuthorProfile (#27) = 27
+        assert len(ALL_SCHEMAS) == 27
 
 
 class TestSchemaVersion:

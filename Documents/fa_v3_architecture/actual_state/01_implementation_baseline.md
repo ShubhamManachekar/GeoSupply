@@ -3,13 +3,13 @@
 Date: March 19, 2026
 
 ## Code-Verified Counts
-- Workers implemented: 19
+- Workers implemented: 21
 - Agents implemented: 9
-- Subagents implemented: 4
-- Supervisors implemented: 2
+- Subagents implemented: 5
+- Supervisors implemented: 4
 - Orchestrator implementations: 0
 
-## Implemented Workers (13)
+## Implemented Workers (21)
 
 ### Ingestion Workers (Phase 2)
 - `src/geosupply/workers/news_worker.py`
@@ -37,6 +37,8 @@ Date: March 19, 2026
 - `src/geosupply/workers/sanctions_worker.py` (Tier-1 STATIC)
 - `src/geosupply/workers/network_worker.py` (Tier-2)
 - `src/geosupply/workers/cib_worker.py` (Tier-2)
+- `src/geosupply/workers/verifier_worker.py` (Tier-3)
+- `src/geosupply/workers/author_worker.py` (Tier-3)
 
 ## Implemented Agents (9)
 - `src/geosupply/agents/logging_agent.py`
@@ -49,15 +51,18 @@ Date: March 19, 2026
 - `src/geosupply/agents/route_manager_agent.py`
 - `src/geosupply/agents/knowledge_graph_agent.py` (Phase 7)
 
-## Implemented SubAgents (4) — Phase 5
+## Implemented SubAgents (5) — Phase 5
 - `src/geosupply/subagents/nlp_pipeline_subagent.py`
 - `src/geosupply/subagents/hallucination_check_subagent.py`
 - `src/geosupply/subagents/audit_sample_subagent.py`
 - `src/geosupply/subagents/source_feedback_subagent.py`
+- `src/geosupply/subagents/rag_pipeline_subagent.py`
 
-## Implemented Supervisors (2) — Phase 6
+## Implemented Supervisors (4) — Phase 6
 - `src/geosupply/supervisors/ingestion_supervisor.py`
 - `src/geosupply/supervisors/quality_supervisor.py`
+- `src/geosupply/supervisors/nlp_supervisor.py`
+- `src/geosupply/supervisors/intel_supervisor.py`
 
 ## Implemented Core Contracts
 - Config and locked constants: `src/geosupply/config.py`
@@ -66,9 +71,13 @@ Date: March 19, 2026
 - Audit CLI baseline: `src/geosupply/cli/audit.py`
 
 ## Test Coverage
-- Total tests: 524 (all passing — 490 unit + 9 integration)
+- Total tests: 596 (all passing — 587 unit + 9 integration)
 - Coverage: 99%+ across all implemented components
 - Integration tests: `tests/integration/test_pipeline_integration.py`
 
+## Schemas
+- Total schemas: 27 (25 original + VerificationResult #26 + AuthorProfile #27)
+- All schemas registered in SCHEMA_VERSIONS (audit-verified)
+
 ## Status Label
-- Architecture maturity: Foundation + ingestion + NLP + intel workers (6) + subagents (4) + supervisors (2) + KnowledgeGraphAgent + integration tests.
+- Architecture maturity: Foundation + ingestion + NLP + intel workers (8/8) + subagents (5/5) + supervisors (4/14) + KnowledgeGraphAgent + RAGPipeline + integration tests.
