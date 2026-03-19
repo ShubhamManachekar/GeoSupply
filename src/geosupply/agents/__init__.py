@@ -12,6 +12,11 @@ from geosupply.agents.route_manager_agent import RouteManagerAgent
 from geosupply.agents.security_agent import SecurityAgent
 from geosupply.agents.swarm_manager_agent import SwarmManagerAgent
 from geosupply.agents.timeline_generator_agent import TimelineGeneratorAgent
+# Phase 7: Knowledge Graph
+from geosupply.agents.knowledge_graph_agent import KnowledgeGraphAgent
+# Phase 6+: Quality agents
+from geosupply.agents.fact_check_agent import FactCheckAgent
+from geosupply.agents.summarization_audit_agent import SummarizationAuditAgent
 
 __all__ = [
     "HealthCheckAgent",
@@ -22,4 +27,7 @@ __all__ = [
     "SecurityAgent",
     "SwarmManagerAgent",
     "TimelineGeneratorAgent",
+    "KnowledgeGraphAgent",
+    "FactCheckAgent",
+    "SummarizationAuditAgent",
 ]

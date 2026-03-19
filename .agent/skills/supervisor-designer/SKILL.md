@@ -7,26 +7,27 @@ description: Layer 2 Supervisor design for GeoSupply — budget gating, priority
 
 > Custom GeoSupply skill — 14 supervisors bridging SwarmMaster and Agents
 
-## Implementation Status (Session 20 | 2026-03-19)
-| Supervisor | Domain | Budget | Status |
-|------------|--------|--------|--------|
-| IngestionSupervisor | ingestion | ₹15/cycle | ✅ |
-| QualitySupervisor | quality | ₹10/cycle | ✅ |
-| NLPSupervisor | nlp | ₹8/cycle | ✅ |
-| IntelSupervisor | intel | ₹20/cycle | ✅ |
-| MLSupervisor | ml | ₹5/cycle | ⬜ |
-| IndiaSupervisor | india | ₹10/cycle | ⬜ |
-| DashboardSupervisor | dashboard | ₹3/cycle | ⬜ |
-| InfraSupervisor | infra | ₹2/cycle | ⬜ |
-| DevSupervisor | dev | ₹5/cycle | ⬜ |
-| TestSupervisor | test | ₹5/cycle | ⬜ |
-| TechSupervisor | tech | ₹5/cycle | ⬜ |
-| MarketingSupervisor | marketing | ₹5/cycle | ⬜ |
-| LoopholeHunterSupervisor | security | ₹1/cycle | ⬜ |
-| DisasterRecoverySupervisor | dr | ₹0/cycle | ⬜ |
+## Implementation Status (Session 21 | 2026-03-19)
+| Supervisor | Domain | Budget | Status | Notes |
+|------------|--------|--------|--------|-------|
+| IngestionSupervisor | ingestion | ₹15/cycle | ✅ | |
+| QualitySupervisor | quality | ₹10/cycle | ✅ | manages FactCheckAgent + SummarizationAuditAgent |
+| NLPSupervisor | nlp | ₹8/cycle | ✅ | **+InputSanitiserWorker pre-gate in dispatch()** |
+| IntelSupervisor | intel | ₹20/cycle | ✅ | |
+| MLSupervisor | ml | ₹5/cycle | ⬜ | |
+| IndiaSupervisor | india | ₹10/cycle | ⬜ | |
+| DashboardSupervisor | dashboard | ₹3/cycle | ⬜ | |
+| InfraSupervisor | infra | ₹2/cycle | ⬜ | subscribes to watchdog.alert for restart |
+| DevSupervisor | dev | ₹5/cycle | ⬜ | |
+| TestSupervisor | test | ₹5/cycle | ⬜ | |
+| TechSupervisor | tech | ₹5/cycle | ⬜ | |
+| MarketingSupervisor | marketing | ₹5/cycle | ⬜ | SummarizationAuditAgent must run before tweet publish |
+| LoopholeHunterSupervisor | security | ₹1/cycle | ⬜ | |
+| DisasterRecoverySupervisor | dr | ₹0/cycle | ⬜ | |
 
-**NLPSupervisor pattern**: routes 5 agents (Sentiment/NER/Claim/Translation/Propaganda); `capable_agents(capability)` index.
-**IntelSupervisor pattern**: routes 6 agents + Tier-3 budget pre-check; `tier3_agents()` helper; `_dispatched_agent(result)` = `result["result"]["result"]["agent"]`.
+**NLPSupervisor pattern**: overrides `dispatch()` → calls `InputSanitiserWorker.process()` on `text` field → rejects injection; then `super().dispatch()`.
+**IntelSupervisor pattern**: routes 6 agents + Tier-3 budget pre-check; `tier3_agents()` helper.
+**InfraSupervisor (next)**: must subscribe to `watchdog.alert` topic and restart STUCK agents via `agent.safe_execute({"action": "recover"})`.
 
 ## Supervisor Responsibilities
 

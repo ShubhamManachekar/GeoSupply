@@ -17,6 +17,7 @@ import logging
 
 from geosupply.core.base_supervisor import BaseSupervisor
 from geosupply.schemas import TaskPacket
+from geosupply.workers.input_sanitiser_worker import InputSanitiserWorker
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,7 @@ class NLPSupervisor(BaseSupervisor):
         self._agent_registry: dict[str, _StubAgent] = {
             agent_name: _StubAgent(agent_name) for agent_name in self.agents
         }
+        self._sanitiser = InputSanitiserWorker()
         self.reset_budget()
 
     def register_agent(self, agent_name: str, agent: object) -> None:
@@ -100,6 +102,38 @@ class NLPSupervisor(BaseSupervisor):
             self.name, task.task_type, agent.name,
         )
         return agent
+
+    async def dispatch(self, task: TaskPacket) -> dict:
+        """
+        Override BaseSupervisor.dispatch() to add InputSanitiserWorker pre-gate.
+
+        Any 'text' field in task.payload is sanitised before routing.
+        Suspicious inputs (injection detected) are rejected immediately.
+        """
+        text = task.payload.get("text")
+        if text:
+            trace_id = task.payload.get("trace_id", task.task_id)
+            san_result = await self._sanitiser.process(
+                {"text": text, "trace_id": trace_id}
+            )
+            # Sanitiser returned a WorkerError
+            if "error_type" in san_result:
+                return {
+                    "status": "rejected",
+                    "reason": f"sanitiser_error:{san_result['error_type']}",
+                }
+            result_data = san_result.get("result", {})
+            if result_data.get("is_suspicious"):
+                logger.warning(
+                    "%s: injection detected in task %s — rejecting",
+                    self.name, task.task_id,
+                )
+                return {"status": "rejected", "reason": "injection_detected"}
+            # Replace raw text with sanitised text
+            task = task.model_copy(
+                update={"payload": {**task.payload, "text": result_data["sanitised_text"]}}
+            )
+        return await super().dispatch(task)
 
     def capable_agents(self, capability: str) -> list[str]:
         """Return list of agent names that support the given capability."""

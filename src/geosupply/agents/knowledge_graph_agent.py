@@ -15,8 +15,10 @@ Capabilities: KG_BUILD, KG_QUERY, KG_DEDUP, KG_STATS
 from __future__ import annotations
 
 import logging
+import sqlite3
 from collections import deque
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from geosupply.config import (
@@ -26,6 +28,25 @@ from geosupply.config import (
     KG_WRITE_BUFFER_BATCH_SIZE,
 )
 from geosupply.core.base_agent import BaseAgent
+
+_CREATE_EDGES_TABLE = """
+CREATE TABLE IF NOT EXISTS kg_edges (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    source      TEXT NOT NULL,
+    relation    TEXT NOT NULL,
+    target      TEXT NOT NULL,
+    weight      REAL NOT NULL DEFAULT 1.0,
+    dedup_key   TEXT NOT NULL,
+    created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_kg_dedup ON kg_edges(dedup_key, created_at);
+CREATE INDEX IF NOT EXISTS idx_kg_source ON kg_edges(source);
+"""
+
+_INSERT_EDGE = """
+INSERT INTO kg_edges (source, relation, target, weight, dedup_key, created_at)
+VALUES (?, ?, ?, ?, ?, ?)
+"""
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +105,7 @@ class KnowledgeGraphAgent(BaseAgent):
     capabilities = {"KG_BUILD", "KG_QUERY", "KG_DEDUP", "KG_STATS"}
     max_concurrent = 1   # single-writer invariant (FA v1 G5)
 
-    def __init__(self) -> None:
+    def __init__(self, db_path: Path | None = None) -> None:
         # Graph storage: source → target → relation → weight
         self._graph: dict[str, dict[str, dict[str, float]]] = {}
         # Write buffer (G5)
@@ -96,6 +117,50 @@ class KnowledgeGraphAgent(BaseAgent):
         # Stats
         self._total_added = 0
         self._total_deduped = 0
+        # SQLite persistence (optional)
+        self._db_path: Path | None = db_path
+        self._conn: sqlite3.Connection | None = None
+
+    async def setup(self) -> None:
+        """Initialise SQLite edge store and restore graph from DB."""
+        if self._db_path is None:
+            return
+        self._conn = sqlite3.connect(str(self._db_path))
+        self._conn.executescript(_CREATE_EDGES_TABLE)
+        self._conn.commit()
+        self._load_from_db()
+        logger.info("KnowledgeGraphAgent: SQLite store at %s", self._db_path)
+
+    async def teardown(self) -> None:
+        """Flush pending buffer and close SQLite connection."""
+        if self._write_buffer:
+            self._flush_buffer()
+        if self._conn:
+            self._conn.close()
+            self._conn = None
+
+    def _load_from_db(self) -> int:
+        """Restore graph edges from SQLite on startup. Returns edge count loaded."""
+        if self._conn is None:
+            return 0
+        cursor = self._conn.execute(
+            "SELECT source, relation, target, weight, dedup_key, created_at FROM kg_edges"
+        )
+        loaded = 0
+        for row in cursor.fetchall():
+            src, rel, tgt, wt, dk_str, created_str = row
+            self._graph.setdefault(src, {}).setdefault(tgt, {})[rel] = wt
+            # Restore dedup window entry
+            dk = tuple(dk_str.split(":", 2))
+            if len(dk) == 3:
+                try:
+                    ts = datetime.fromisoformat(created_str)
+                    self._dedup_window[dk] = ts  # type: ignore[assignment]
+                except ValueError:
+                    pass
+            loaded += 1
+        logger.info("KnowledgeGraphAgent: loaded %d edges from SQLite", loaded)
+        return loaded
 
     # ── Write path ────────────────────────────────────────────────────────────
 
@@ -108,6 +173,27 @@ class KnowledgeGraphAgent(BaseAgent):
             return False
         age = (now - last).total_seconds()
         return age < KG_DEDUP_WINDOW_SECONDS
+
+    def _persist_edge(self, triple: KGTriple) -> None:
+        """Write a triple to SQLite edge store (if connected)."""
+        if self._conn is None:
+            return
+        dk = ":".join(triple.dedup_key)
+        try:
+            self._conn.execute(
+                _INSERT_EDGE,
+                (
+                    triple.source.lower(),
+                    triple.relation.upper(),
+                    triple.target.lower(),
+                    triple.weight,
+                    dk,
+                    triple.timestamp.isoformat(),
+                ),
+            )
+            self._conn.commit()
+        except sqlite3.Error as exc:
+            logger.error("KnowledgeGraphAgent: SQLite write failed: %s", exc)
 
     def _write_triple(self, triple: KGTriple) -> bool:
         """Write a triple to the graph. Returns True if written, False if deduped."""
@@ -123,6 +209,7 @@ class KnowledgeGraphAgent(BaseAgent):
         self._dedup_window[triple.dedup_key] = triple.timestamp
         self._canary.append(triple)
         self._total_added += 1
+        self._persist_edge(triple)   # SQLite persistence (no-op if no db_path)
         return True
 
     def _flush_buffer(self) -> int:

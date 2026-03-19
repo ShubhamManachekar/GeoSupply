@@ -151,6 +151,15 @@ class EventBus:
 
         return True
 
+    def verify_event(self, event: Event) -> bool:
+        """
+        Public interface for G3 signature verification.
+
+        Called by BaseAgent.handle_event() to verify inbound events.
+        Returns True if signature is valid, False if missing key or mismatch.
+        """
+        return self._verify_signature(event)
+
     # === Utilities ===
 
     def get_published(self, topic: str | None = None) -> list[Event]:
