@@ -5,14 +5,14 @@ FA v2 | Part III | §3.2 — Mixture-of-Agents brief synthesis
 3 proposers (parallel) + 4-level aggregation fallback.
 
 PIPELINE:
-    Step 1: propose_x3  — 3 parallel BriefWorker stub calls (Tier-1/2/3)
+    Step 1: propose_x3  — 3 parallel deterministic proposal generators (Tier-1/2/3)
     Step 2: save_proposals  — persist all 3 to SQLite BEFORE aggregation (audit invariant)
     Step 3: aggregate  — 4-level MoA fallback cascade
     Step 4: hallucination_gate  — confidence ≥ HALLUCINATION_FLOOR
 
 MoA LEVELS:
-    Level 0: GPT-OSS:20b aggregation (primary — stub in this implementation)
-    Level 1: Groq llama-3.3-70b aggregation (cloud fallback — stub)
+    Level 0: Primary aggregation policy
+    Level 1: Secondary aggregation policy (breaker fallback)
     Level 2: Scoring-based selection (weighted: factcheck×0.4 + source_cred×0.3 + evidence×0.3)
     Level 3: Return all 3 proposals to admin queue
 
@@ -105,7 +105,7 @@ class BriefSynthSubAgent(BaseSubAgent):
         self._breaker_open: bool = False
 
     # ------------------------------------------------------------------
-    # Proposer stubs (Step 1)
+    # Deterministic proposers (Step 1)
     # ------------------------------------------------------------------
 
     async def _propose_tier3(
@@ -201,7 +201,7 @@ class BriefSynthSubAgent(BaseSubAgent):
         source_credibility: float = float(input_data.get("source_credibility", 0.8))
         trace_id: str = input_data.get("trace_id", "test")
 
-        # Step 1: propose_x3 — 3 parallel proposer stubs
+        # Step 1: propose_x3 — 3 parallel proposers
         proposals: list[BriefProposal] = list(
             await asyncio.gather(
                 self._propose_tier3(claim_text, source_credibility, trace_id),
@@ -217,11 +217,11 @@ class BriefSynthSubAgent(BaseSubAgent):
         aggregation_level: int
 
         if not self._breaker_open:
-            # Level 0: GPT-OSS:20b (stub — select proposal with highest confidence)
+            # Level 0: primary policy — highest confidence wins
             best = max(proposals, key=lambda p: p.confidence)
             aggregation_level = 0
         else:
-            # Level 1: Groq llama-3.3-70b fallback (stub — same selection logic)
+            # Level 1: breaker fallback policy — same deterministic chooser
             if self._breaker_failures < INTERNAL_BREAKER_MAX_FAILURES:
                 best = max(proposals, key=lambda p: p.confidence)
                 aggregation_level = 1

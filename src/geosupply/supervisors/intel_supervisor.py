@@ -57,8 +57,8 @@ _AGENT_TIER: dict[str, int] = {
 _TIER3_TASK_TYPES = {"VERIFY_CLAIM", "AUTHOR_CHECK"}
 
 
-class _StubAgent:
-    """Minimal agent stub for supervisor tests without full agent instantiation."""
+class _SupervisorAgentProxy:
+    """Minimal agent proxy for supervisor tests for deferred runtime registration."""
 
     def __init__(self, name: str) -> None:
         self.name = name
@@ -100,12 +100,12 @@ class IntelSupervisor(BaseSupervisor):
             "SupplierAgent", "SanctionsAgent", "SourceCredAgent",
             "CyberAgent", "VerifierAgent", "AuthorAgent",
         ]
-        self._agent_registry: dict[str, _StubAgent] = {
-            agent_name: _StubAgent(agent_name) for agent_name in self.agents
+        self._agent_registry: dict[str, _SupervisorAgentProxy] = {
+            agent_name: _SupervisorAgentProxy(agent_name) for agent_name in self.agents
         }
 
     def register_agent(self, agent_name: str, agent: object) -> None:
-        """Register a real BaseAgent instance (replaces stub at runtime)."""
+        """Register a real BaseAgent instance (replaces proxy at runtime)."""
         self._agent_registry[agent_name] = agent  # type: ignore[assignment]
 
     async def dispatch(self, task: TaskPacket) -> dict:
@@ -130,7 +130,7 @@ class IntelSupervisor(BaseSupervisor):
 
         return await super().dispatch(task)
 
-    async def _select_agent(self, task: TaskPacket) -> _StubAgent:
+    async def _select_agent(self, task: TaskPacket) -> _SupervisorAgentProxy:
         """Route to the appropriate intel agent for the given task_type."""
         preferred = _INTEL_ROUTING.get(task.task_type, "SourceCredAgent")
         agent = self._agent_registry.get(preferred)

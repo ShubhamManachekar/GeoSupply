@@ -6,6 +6,7 @@ from geosupply.core.base_agent import BaseAgent, InvalidStateTransition
 
 
 class TestAgent(BaseAgent):
+    __test__ = False
     name = "TestAgent"
     domain = "test"
     capabilities = {"TEST_CAP"}
@@ -18,6 +19,7 @@ class TestAgent(BaseAgent):
 
 
 class FailAgent(BaseAgent):
+    __test__ = False
     name = "FailAgent"
     domain = "test"
     capabilities = {"FAIL"}

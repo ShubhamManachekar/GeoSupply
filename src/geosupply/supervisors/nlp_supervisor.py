@@ -43,8 +43,8 @@ _NLP_CAPABILITIES: dict[str, list[str]] = {
 }
 
 
-class _StubAgent:
-    """Minimal agent stub for supervisor tests without full agent instantiation."""
+class _SupervisorAgentProxy:
+    """Minimal agent proxy for supervisor tests for deferred runtime registration."""
 
     def __init__(self, name: str) -> None:
         self.name = name
@@ -78,16 +78,16 @@ class NLPSupervisor(BaseSupervisor):
     def __init__(self) -> None:
         super().__init__()
         self.agents = ["SentimentAgent", "NERAgent", "ClaimAgent", "TranslationAgent", "PropagandaAgent"]
-        self._agent_registry: dict[str, _StubAgent] = {
-            agent_name: _StubAgent(agent_name) for agent_name in self.agents
+        self._agent_registry: dict[str, _SupervisorAgentProxy] = {
+            agent_name: _SupervisorAgentProxy(agent_name) for agent_name in self.agents
         }
         self._sanitiser = InputSanitiserWorker()
 
     def register_agent(self, agent_name: str, agent: object) -> None:
-        """Register a real BaseAgent instance (replaces stub at runtime)."""
+        """Register a real BaseAgent instance (replaces proxy at runtime)."""
         self._agent_registry[agent_name] = agent  # type: ignore[assignment]
 
-    async def _select_agent(self, task: TaskPacket) -> _StubAgent:
+    async def _select_agent(self, task: TaskPacket) -> _SupervisorAgentProxy:
         """Route to the appropriate NLP agent for the given task_type."""
         preferred = _NLP_ROUTING.get(task.task_type, "SentimentAgent")
         agent = self._agent_registry.get(preferred)

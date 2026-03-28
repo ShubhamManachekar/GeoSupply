@@ -15,7 +15,7 @@ dependencies = [
     "pydantic>=2.0,<3.0",
     "httpx>=0.25.0",
     "chromadb>=0.4.0",
-    "supabase>=2.0.0",
+    "supabase>=2.18.0,<2.20.0",
     "xgboost>=2.0.0",
     "sentence-transformers>=2.2.0",
     "networkx>=3.0",
@@ -27,6 +27,8 @@ dependencies = [
     "tenacity>=8.2.0",
     "structlog>=23.0.0",
     "colorama>=0.4.6",
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
 ]
 
 [project.optional-dependencies]
@@ -40,6 +42,7 @@ dev = [
 
 [project.scripts]
 geosupply = "geosupply.cli.audit:main"
+geosupply-api = "geosupply.api.main:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

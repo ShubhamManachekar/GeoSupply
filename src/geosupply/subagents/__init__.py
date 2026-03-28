@@ -14,6 +14,11 @@ from geosupply.subagents.graph_rag_subagent import GraphRAGSubAgent
 from geosupply.subagents.brief_synth_subagent import BriefSynthSubAgent
 from geosupply.subagents.semantic_drift_monitor import SemanticDriftMonitor
 
+# Session 28 additions
+from geosupply.subagents.override_pattern_subagent import OverridePatternSubAgent
+from geosupply.subagents.moa_fallback_subagent import MoAFallbackSubAgent
+from geosupply.subagents.penetration_test_subagent import PenetrationTestSubAgent
+
 __all__ = [
     "NLPPipelineSubAgent",
     "HallucinationCheckSubAgent",
@@ -25,4 +30,7 @@ __all__ = [
     "GraphRAGSubAgent",
     "BriefSynthSubAgent",
     "SemanticDriftMonitor",
+    "OverridePatternSubAgent",
+    "MoAFallbackSubAgent",
+    "PenetrationTestSubAgent",
 ]

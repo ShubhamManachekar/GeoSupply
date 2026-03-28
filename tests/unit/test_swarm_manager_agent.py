@@ -223,3 +223,21 @@ class TestRoutingTable:
             assert isinstance(supervisor_name, str)
             assert isinstance(tier, int)
             assert isinstance(uses_static, bool)
+
+
+# ---------------------------------------------------------------------------
+# Delegation tests — SwarmManagerAgent → SwarmMaster
+# ---------------------------------------------------------------------------
+
+class TestSwarmManagerAgentDelegation:
+    def test_decompose_still_returns_10_packets(self):
+        """SwarmManagerAgent.decompose() still returns 10 packets (delegation works)."""
+        agent = SwarmManagerAgent()
+        packets = agent.decompose({"compound_task_type": "SUPPLY_BRIEF"})
+        assert len(packets) == 10
+
+    def test_routing_table_importable(self):
+        """ROUTING_TABLE can be imported from swarm_manager_agent (backward compat)."""
+        from geosupply.agents.swarm_manager_agent import ROUTING_TABLE as RT
+        assert isinstance(RT, dict)
+        assert len(RT) >= 57

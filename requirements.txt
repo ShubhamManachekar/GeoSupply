@@ -8,7 +8,7 @@ httpx>=0.25.0
 
 # Databases
 chromadb>=0.4.0
-supabase>=2.0.0
+supabase>=2.18.0,<2.20.0
 
 # ML
 xgboost>=2.0.0
@@ -34,6 +34,10 @@ structlog>=23.0.0
 
 # CLI
 colorama>=0.4.6
+
+# REST API
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
 
 # Dev/Test
 pytest>=7.4.0

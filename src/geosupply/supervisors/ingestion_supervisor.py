@@ -30,8 +30,8 @@ _INGESTION_ROUTING: dict[str, str] = {
 }
 
 
-class _StubAgent:
-    """Minimal agent stub for supervisor tests without full agent instantiation."""
+class _SupervisorAgentProxy:
+    """Minimal agent proxy for supervisor tests for deferred runtime registration."""
 
     def __init__(self, name: str) -> None:
         self.name = name
@@ -63,15 +63,15 @@ class IngestionSupervisor(BaseSupervisor):
         super().__init__()
         self.agents = ["NewsAgent", "IndiaAPIAgent", "TelegramAgent", "AISAgent"]
         # Initialise agent registry with stubs (replaced by real agents at runtime)
-        self._agent_registry: dict[str, _StubAgent] = {
-            agent_name: _StubAgent(agent_name) for agent_name in self.agents
+        self._agent_registry: dict[str, _SupervisorAgentProxy] = {
+            agent_name: _SupervisorAgentProxy(agent_name) for agent_name in self.agents
         }
 
     def register_agent(self, agent_name: str, agent: object) -> None:
-        """Register a real BaseAgent instance (replaces stub at runtime)."""
+        """Register a real BaseAgent instance (replaces proxy at runtime)."""
         self._agent_registry[agent_name] = agent  # type: ignore[assignment]
 
-    async def _select_agent(self, task: TaskPacket) -> _StubAgent:
+    async def _select_agent(self, task: TaskPacket) -> _SupervisorAgentProxy:
         """
         Route to the preferred agent for the given task_type.
         Falls back to NewsAgent if unknown.

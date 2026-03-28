@@ -1,13 +1,18 @@
+<!-- markdownlint-disable MD004 MD022 MD032 MD058 MD060 -->
+
 # Actual State: Implementation Baseline
 
-Date: March 19, 2026 (Session 21)
+Date: March 28, 2026 (Session 28)
 
-## Code-Verified Counts — Session 22 (2026-03-19)
-- Workers implemented: 19
-- Agents implemented: 11 (SwarmManagerAgent now has decompose() / execute_dag() / route() + ROUTING_TABLE)
-- Subagents implemented: 10 (GraphRAGSubAgent, BriefSynthSubAgent, SemanticDriftMonitor added)
-- Supervisors implemented: 5 (InfraSupervisor added — watchdog.alert consumer)
-- Orchestrator implementations: 0 (SwarmMaster DAG routing in SwarmManagerAgent — not yet in dedicated orchestrator layer)
+## Verified Counts (Session 28 | 2026-03-28)
+- Workers: 19 (phases 1-4 complete)
+- Agents: 11 (unchanged)
+- SubAgents: 13 (+3: OverridePatternSubAgent, MoAFallbackSubAgent, PenetrationTestSubAgent)
+- Supervisors: 14 (+9: DR, ML, India, Dashboard, Dev, Test, Tech, Marketing, LoopholeHunter)
+- Orchestrator: 1 (SwarmMaster at orchestrator/swarm_master.py)
+- API Endpoints: 15 (Phase 9 started — FastAPI REST layer complete)
+- Tests: 963 passing
+- Schemas: 32 (unchanged)
 
 ## Implemented Workers (19)
 
@@ -61,7 +66,7 @@ Date: March 19, 2026 (Session 21)
 - `src/geosupply/agents/fact_check_agent.py` — FACT_CHECK, CLAIM_VERIFY, EVIDENCE_SCORE, QUARANTINE_BRIEF
 - `src/geosupply/agents/summarization_audit_agent.py` — SUMMARIZATION_AUDIT, DISTORTION_CHECK, BAND_VERIFY
 
-## Implemented SubAgents (10)
+## Implemented SubAgents (13)
 
 ### Phase 5 (original)
 - `src/geosupply/subagents/nlp_pipeline_subagent.py`
@@ -79,12 +84,42 @@ Date: March 19, 2026 (Session 21)
 - `src/geosupply/subagents/brief_synth_subagent.py` — 3-proposer MoA + 4-level aggregation fallback + SQLite audit invariant
 - `src/geosupply/subagents/semantic_drift_monitor.py` — KL divergence per source channel; NORMAL/WARN/SUSPEND/SILENT alerts; publishes source.suspend / source.silent_alert events
 
-## Implemented Supervisors (5) — Phase 6 + Session 22
+### Session 28 additions
+- `src/geosupply/subagents/override_pattern_subagent.py` — 4 pattern detectors (OVR-001 to OVR-004)
+- `src/geosupply/subagents/moa_fallback_subagent.py` — SELECTED/MERGED/ESCALATE/BELOW_FLOOR logic
+- `src/geosupply/subagents/penetration_test_subagent.py` — 5 security probes (PEN-001 to PEN-005)
+
+## Implemented Supervisors (14) — Phase 6 + Sessions 22 + 28
 - `src/geosupply/supervisors/ingestion_supervisor.py`
 - `src/geosupply/supervisors/quality_supervisor.py`
 - `src/geosupply/supervisors/nlp_supervisor.py` — with InputSanitiserWorker pre-gate (Session 21)
 - `src/geosupply/supervisors/intel_supervisor.py`
-- `src/geosupply/supervisors/infra_supervisor.py` — Session 22; subscribes to watchdog.alert; cannot be paused; manages 9 infra singletons
+- `src/geosupply/supervisors/infra_supervisor.py` — Session 22; cannot be paused; manages 9 infra singletons
+- `src/geosupply/supervisors/disaster_recovery_supervisor.py` — Session 28; P0 cannot-be-paused; budget ₹2/cycle
+- `src/geosupply/supervisors/ml_supervisor.py` — Session 28; budget ₹12/cycle
+- `src/geosupply/supervisors/india_supervisor.py` — Session 28; budget ₹10/cycle
+- `src/geosupply/supervisors/dashboard_supervisor.py` — Session 28; budget ₹3/cycle
+- `src/geosupply/supervisors/dev_supervisor.py` — Session 28; budget ₹5/cycle
+- `src/geosupply/supervisors/test_supervisor.py` — Session 28; budget ₹4/cycle
+- `src/geosupply/supervisors/tech_supervisor.py` — Session 28; custom TECH_DB_CHECK budget gate
+- `src/geosupply/supervisors/marketing_supervisor.py` — Session 28; budget ₹8/cycle
+- `src/geosupply/supervisors/loophole_hunter_supervisor.py` — Session 28; cannot be paused; budget ₹5/cycle
+
+## Implemented Orchestrator (1) — Session 28
+- `src/geosupply/orchestrator/swarm_master.py` — SwarmMaster: 58-entry ROUTING_TABLE, SUPPLY_BRIEF_TEMPLATE (10 tasks), decompose(), execute_dag(), route(), run_supply_brief()
+
+## Implemented REST API (Phase 9) — Session 28
+- `src/geosupply/api/main.py` — FastAPI app with lifespan warmup, 8 routers
+- `src/geosupply/api/schemas_api.py` — 13 HTTP envelope Pydantic v2 models
+- `src/geosupply/api/dependencies.py` — singleton factories via lru_cache
+- `src/geosupply/api/routers/health.py` — GET /health, GET /health/deep
+- `src/geosupply/api/routers/tasks.py` — POST /tasks (202), GET /tasks/{id}
+- `src/geosupply/api/routers/pipeline.py` — GET /pipeline/{id}
+- `src/geosupply/api/routers/brief.py` — POST /brief (120s timeout)
+- `src/geosupply/api/routers/workers.py` — GET /workers, /agents, /supervisors
+- `src/geosupply/api/routers/budget.py` — GET /budget, GET /budget/history
+- `src/geosupply/api/routers/kg.py` — GET /kg/query, POST /kg/update
+- `src/geosupply/api/routers/audit.py` — GET /audit, GET /audit/run
 
 ## Gap Fixes Applied (Session 22)
 | Gap | Before | After |
@@ -116,8 +151,8 @@ Date: March 19, 2026 (Session 21)
 - Audit CLI baseline: `src/geosupply/cli/audit.py`
 
 ## Test Coverage
-- Total tests: 747 (all passing — unit + integration; +73 in Session 22)
-- Integration tests: `tests/integration/test_pipeline_integration.py`
+- Total tests: 963 (all passing — unit + integration; +216 in Session 28)
+- Integration tests: `tests/integration/test_pipeline_integration.py`, `tests/integration/test_api_integration.py`
 
 ## Schemas
 - Total schemas: 32
@@ -132,13 +167,18 @@ Date: March 19, 2026 (Session 21)
 - All schemas registered in ALL_SCHEMAS and SCHEMA_VERSIONS (audit-verified)
 
 ## Status Label
-Foundation + ingestion + NLP + intel workers (19/19) + subagents (10/13) + supervisors (5/14)
+Foundation + ingestion + NLP + intel workers (19/19) + subagents (13/13) + supervisors (14/14)
 + KnowledgeGraphAgent with SQLite + FactCheckAgent + SummarizationAuditAgent
-+ InfraSupervisor + SwarmMaster DAG routing + GraphRAGSubAgent + BriefSynthSubAgent
-+ SemanticDriftMonitor + integration tests + all G3 security fixes applied.
++ InfraSupervisor + SwarmMaster (dedicated orchestrator/swarm_master.py, 58-entry ROUTING_TABLE)
++ GraphRAGSubAgent + BriefSynthSubAgent + SemanticDriftMonitor
++ OverridePatternSubAgent + MoAFallbackSubAgent + PenetrationTestSubAgent
++ FastAPI REST API (15 endpoints, 8 routers)
++ integration tests + all G3 security fixes applied.
 
-## Remaining Items (after Session 22)
-1. Orchestrator (SwarmMaster class) — SwarmManagerAgent has decompose/execute_dag/route but no dedicated Layer 1 orchestrator class yet
-2. 9 remaining supervisors (MLSupervisor, IndiaSupervisor, DashboardSupervisor, DevSupervisor, TestSupervisor, TechSupervisor, MarketingSupervisor, LoopholeHunterSupervisor, DisasterRecoverySupervisor)
-3. 3 remaining subagents (OverridePatternSubAgent, MoAFallbackSubAgent, PenetrationTestSubAgent)
-4. End-to-end integration test: full SUPPLY_BRIEF pipeline via execute_dag
+## Remaining Items (after Session 28)
+1. Streamlit 12-page portal implementation under `src/geosupply/portal/` (Phase 9 remainder).
+2. Phase 5 ML worker implementation (ConflictPredictWorker, StressScoreWorker) to back MLSupervisor with real worker logic.
+3. Phase 15 FA v2 worker domains (Aviation, Disaster, Energy, Market, Convergence/Cascade).
+4. KnowledgeGraphAgent full NetworkX + ChromaDB integration and degraded-mode controls in SwarmMaster (target-state backlog).
+
+Session 28b note: Documentation trail synchronized and markdownlint warning set rectified for active handoff documents.

@@ -13,6 +13,7 @@ Output: Normalised message list [{channel_id, message_id, text, date, views}]
 from __future__ import annotations
 
 import logging
+import os
 import re
 from datetime import datetime, timezone
 from typing import Any
@@ -51,7 +52,7 @@ CHANNEL_REGISTRY: dict[str, dict[str, Any]] = {
     # Energy & Commodities
     "@OilPriceAlert": {"category": "energy", "region": "global", "language": "en"},
     "@commoditynews": {"category": "commodities", "region": "global", "language": "en"},
-    # Others (placeholders for full 27)
+    # Additional global channels
     "@OSINTechnical": {"category": "osint", "region": "global", "language": "en"},
     "@IntelSlavaZ": {"category": "conflict", "region": "eastern_europe", "language": "en"},
     "@neaborning": {"category": "geopolitical", "region": "asia", "language": "en"},
@@ -226,24 +227,68 @@ class TelegramWorker(BaseWorker):
     @breaker
     async def _fetch_messages(self, channel_id: str, limit: int, trace_id: str) -> list[dict]:
         """
-        Fetch messages from Telegram. Uses telethon/pyrogram in production.
-        Separated for testability.
+        Fetch messages from Telegram using Telethon when credentials are available.
+        Falls back to an empty list when Telethon or credentials are unavailable.
         """
         try:
-            # In production, this would use Telethon:
-            # client = TelegramClient(...)
-            # messages = await client.get_messages(channel_id, limit=limit)
-            # For now, attempt import and fallback gracefully
-            import telethon  # noqa: F401
-            logger.info("%s: telethon available, would fetch from %s [trace=%s]",
-                        self.name, channel_id, trace_id)
-            return []  # Placeholder for real implementation
+            from telethon import TelegramClient  # type: ignore[import-not-found]
         except ImportError:
             logger.warning(
                 "%s: telethon not installed, returning empty [trace=%s]",
                 self.name, trace_id,
             )
             return []
+
+        api_id = os.getenv("TELEGRAM_API_ID", "").strip()
+        api_hash = os.getenv("TELEGRAM_API_HASH", "").strip()
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+
+        if not api_id or not api_hash:
+            logger.warning(
+                "%s: Telegram credentials missing (TELEGRAM_API_ID/API_HASH), returning empty [trace=%s]",
+                self.name,
+                trace_id,
+            )
+            return []
+
+        try:
+            api_id_int = int(api_id)
+        except ValueError:
+            logger.warning(
+                "%s: invalid TELEGRAM_API_ID '%s', returning empty [trace=%s]",
+                self.name,
+                api_id,
+                trace_id,
+            )
+            return []
+
+        session_name = f"geosupply_{self.name.lower()}"
+        messages: list[dict] = []
+
+        async with TelegramClient(session_name, api_id_int, api_hash) as client:
+            if bot_token:
+                await client.start(bot_token=bot_token)
+            entity = await client.get_entity(channel_id)
+            async for message in client.iter_messages(entity, limit=limit):
+                messages.append(
+                    {
+                        "id": getattr(message, "id", 0),
+                        "text": getattr(message, "message", "") or "",
+                        "date": (
+                            getattr(message, "date", None).isoformat()
+                            if getattr(message, "date", None)
+                            else ""
+                        ),
+                        "views": getattr(message, "views", 0) or 0,
+                        "forwards": getattr(message, "forwards", 0) or 0,
+                        "photo": bool(getattr(message, "photo", None)),
+                        "reply_to_msg_id": (
+                            getattr(getattr(message, "reply_to", None), "reply_to_msg_id", None)
+                        ),
+                    }
+                )
+
+        return messages
 
     def get_channels_by_category(self, category: str) -> list[str]:
         """Return all registered channel IDs matching a category."""

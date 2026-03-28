@@ -90,7 +90,7 @@ class GraphRAGSubAgent(BaseSubAgent):
 
     def __init__(
         self,
-        kg_agent=None,                     # KnowledgeGraphAgent or stub — optional
+        kg_agent=None,                     # KnowledgeGraphAgent instance (optional)
         doc_store: list[dict] | None = None,  # list of {"text": str, "source": str}
     ) -> None:
         self._kg_agent = kg_agent

@@ -8,6 +8,7 @@ from geosupply.schemas import TaskPacket
 
 
 class MockAgent(BaseAgent):
+    __test__ = False
     name = "MockAgent"
     domain = "test"
     capabilities = {"MOCK"}
@@ -20,6 +21,7 @@ class MockAgent(BaseAgent):
 
 
 class TestSupervisor(BaseSupervisor):
+    __test__ = False
     name = "TestSupervisor"
     domain = "test"
     budget_inr = 1.0

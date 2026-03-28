@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD022 MD029 MD032 -->
+
 # Code Review Report (CodeRabbit-Style)
 
 Date: 2026-03-28
