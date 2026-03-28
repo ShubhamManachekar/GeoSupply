@@ -1,5 +1,5 @@
 # GeoSupply AI — Development Trail & Context Handoff
-## FA v3 Baseline | Last Updated: 2026-03-20 00:10 IST | Classification: Internal
+## FA v3 Baseline | Last Updated: 2026-03-28 IST | Classification: Internal
 
 > **PURPOSE**: Single source of truth for any AI model (Claude, Antigravity, Copilot, or future tool) to pick up development context instantly. **Update after EVERY session.**
 
@@ -13,7 +13,10 @@ ARCHITECTURE:   FA v3 (canonical docs), with FA v2/v10/v9 retained as reference 
 LANGUAGE:       Python 3.10+, async/await, Pydantic v2, type hints everywhere
 BUDGET CAP:     ₹500/month (LOCKED — all costs in INR, never USD)
 HALLUCINATION:  FLOOR = 0.70 (LOCKED — never lower)
-STATUS:         Session 24 | Workers:19 | Agents:11 | SubAgents:10 | Supervisors:5/14 | Tests:747 | Schemas:32
+STATUS:         Session 27 | Workers:19 | Agents:11 | SubAgents:10 | Supervisors:5/14 | Tests:747 | Schemas:32
+                Session 27: Auto-sync venv bootstrap — hash-based drift detection + stateful reinstall + docs
+                Session 26: Venv execution hardening — logger fixes + local src bootstrap + strict audit green
+                Session 25: Skillfish multi-assistant skill rollout — Copilot/Claude/Gemini mirrors + project manifest
                 Session 24: Phase R3 code logic fixes — mutable defaults, @breaker, super().__init__(), silent handlers
                 Session 23: Thorough project audit — 35 findings, 23 fixed, 18 files modified
                 Session 22: InfraSupervisor, SwarmMaster.decompose()+DAG, GraphRAGSubAgent,
@@ -1100,3 +1103,102 @@ When switching AI models, the incoming model MUST:
    - `.agent/skills/phase-gate-auditor/SKILL.md` Step 5: `from geosupply.config` → `from geosupply.schemas`
 
 **Stats**: 24 files modified, 0 new files, 0 deleted. All 12 audit findings resolved. No new tests added (existing tests cover base class behavior).
+
+---
+
+### Session 25 — Skillfish Rollout: Cross-Assistant Skill Mirror (Copilot + Claude + Gemini)
+**Date**: 2026-03-28 IST
+**Model**: GPT-5.3-Codex | **Type**: Tooling / Skills Infrastructure
+
+**Done**:
+1. **Installed and validated Skillfish workflow** for project-level skill operations.
+2. **Mirrored local skills to all requested assistant ecosystems**:
+   - Source of truth: `.agent/skills` (29 local skills)
+   - Copilot target: `.github/skills` (29 mirrored skills)
+   - Claude/Claude Code target: `.claude/skills` (29 mirrored skills)
+   - Gemini target: `.gemini/skills` (29 mirrored skills)
+3. **Generated project manifest context** via Skillfish project bundling:
+   - `npx skillfish bundle --project`
+   - Project location: `skillfish.json`
+   - Result: local skills detected; no external skills required to bundle.
+4. **Repository hygiene check**:
+   - Verified transient `node_modules` cleanup (`Test-Path node_modules` -> `False`).
+
+**Files created/modified**:
+- `.github/skills/**` (29 mirrored skill directories)
+- `.claude/skills/**` (29 mirrored skill directories)
+- `.gemini/skills/**` (29 mirrored skill directories)
+- `skillfish.json`
+- `package.json`
+- `package-lock.json`
+
+**Stats**: Skill mirroring complete across 3 assistant ecosystems; no Python runtime logic changed; test count unchanged.
+
+**Next priorities**:
+- Continue P0 backlog: remaining 9 supervisors + dedicated orchestrator layer.
+- Add end-to-end `SUPPLY_BRIEF` pipeline integration coverage.
+
+---
+
+### Session 26 — Venv Hardening: Module Import + Logger Fixes + Strict Audit Pass
+**Date**: 2026-03-28 IST
+**Model**: GPT-5.3-Codex | **Type**: Runtime Stability / Environment Hardening
+
+**Done**:
+1. **Fixed runtime NameError bugs** in fallback/error paths:
+   - `src/geosupply/cli/audit.py`: added module logger used by discovery/MRO warning handlers.
+   - `src/geosupply/subagents/rag_pipeline_subagent.py`: added module logger used by ChromaDB fallback logging.
+2. **Preserved subclass capability contracts** while keeping instance-safe state:
+   - `src/geosupply/core/base_agent.py`: `self.capabilities` now initializes from subclass-declared `capabilities` instead of always resetting to empty set.
+3. **Aligned InfraSupervisor runtime roster with declared contract**:
+   - `src/geosupply/supervisors/infra_supervisor.py`: instance `agents` now copied from class-level declaration (includes FactCheck/Budget manager entries expected by tests).
+4. **Added venv-friendly local import bootstrap**:
+   - `sitecustomize.py` at repo root now auto-adds `src/` to `sys.path` when running Python from workspace root, removing manual `PYTHONPATH` dependency for local venv execution.
+5. **Verification**:
+   - `f:/GeoSupply/.venv/Scripts/python.exe -m pytest tests/unit/test_audit_cli.py tests/unit/test_rag_pipeline_subagent.py -q` → **40 passed**.
+   - `f:/GeoSupply/.venv/Scripts/python.exe -m geosupply.cli.audit --level strict` → **747 passed**, audit summary **5 passed / 0 failed**.
+
+**Files modified**:
+- `src/geosupply/cli/audit.py`
+- `src/geosupply/subagents/rag_pipeline_subagent.py`
+- `src/geosupply/core/base_agent.py`
+- `src/geosupply/supervisors/infra_supervisor.py`
+- `sitecustomize.py`
+- `Documents/DEVELOPMENT_TRAIL.md`
+
+**Stats**: Strict audit green in `.venv` with full suite (`747 passed`).
+
+**Next priorities**:
+- Continue P0 backlog: 9 remaining supervisors + dedicated orchestrator layer.
+- Keep venv gate command as default: `f:/GeoSupply/.venv/Scripts/python.exe -m geosupply.cli.audit --level strict`.
+
+---
+
+### Session 27 — Auto-Update Bootstrap + Environment Documentation
+**Date**: 2026-03-28 IST
+**Model**: GPT-5.3-Codex | **Type**: Tooling Automation / Documentation
+
+**Done**:
+1. **Upgraded `scripts/venv_bootstrap.ps1` to auto-sync as development evolves**:
+   - Added hash-based drift detection over key environment inputs:
+     - `pyproject.toml`
+     - `requirements.txt`
+     - `scripts/venv_bootstrap.ps1`
+     - `sitecustomize.py`
+   - Added state file: `.venv/.bootstrap-state.json`.
+   - Reinstalls only when drift is detected, or when `-ForceSync` is used.
+   - Preserves optional dev install behavior via `-InstallDev`.
+2. **Added explicit environment documentation**:
+   - New doc: `Documents/fa_v3_architecture/actual_state/05_venv_bootstrap.md`
+   - Includes script behavior, commands, and venv execution standard.
+
+**Files modified**:
+- `scripts/venv_bootstrap.ps1`
+- `Documents/fa_v3_architecture/actual_state/05_venv_bootstrap.md`
+- `Documents/DEVELOPMENT_TRAIL.md`
+
+**Stats**: Bootstrap is now stateful and self-updating against dependency/config drift.
+
+**Next priorities**:
+- Keep `venv_bootstrap.ps1` as first command in local setup and phase-gate prep.
+- Maintain venv strict-audit command as primary gate.

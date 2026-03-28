@@ -46,7 +46,7 @@ class BaseAgent(ABC):
 
     def __init__(self) -> None:
         # Instance-level mutable state (not class-level — prevents cross-instance leakage)
-        self.capabilities: set[str] = set()
+        self.capabilities: set[str] = set(getattr(self.__class__, "capabilities", set()))
         # --- State Machine (FA v1 G2) ---
         self._state: AgentState = AgentState.IDLE
         self._prev_state: AgentState | None = None

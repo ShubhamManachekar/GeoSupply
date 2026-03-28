@@ -1,6 +1,7 @@
 import argparse
 import inspect
 import importlib
+import logging
 import pkgutil
 import sys
 from pathlib import Path
@@ -8,6 +9,8 @@ from colorama import init, Fore, Style
 
 # Initialize colorama
 init(autoreset=True)
+
+logger = logging.getLogger(__name__)
 
 # Add src to Python Path if run directly without -m
 SRC_DIR = Path(__file__).resolve().parent.parent.parent

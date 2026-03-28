@@ -19,6 +19,7 @@ Cost: ~₹0.02 per retrieval (embedding local, reranking local).
 
 from __future__ import annotations
 
+import logging
 import re
 from datetime import datetime, timezone
 from typing import Any
@@ -27,6 +28,9 @@ from geosupply.config import HALLUCINATION_FLOOR
 from geosupply.core.base_subagent import BaseSubAgent
 from geosupply.workers.claim_worker import ClaimWorker
 from geosupply.workers.ner_worker import NERWorker
+
+
+logger = logging.getLogger(__name__)
 
 
 # ── Relevance scoring constants ───────────────────────────────────────────────
