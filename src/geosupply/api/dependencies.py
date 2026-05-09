@@ -6,6 +6,7 @@ All 14 supervisors registered at startup.
 """
 from __future__ import annotations
 
+import asyncio
 from functools import lru_cache
 
 from geosupply.orchestrator.swarm_master import SwarmMaster
@@ -53,13 +54,18 @@ def get_budget_agent() -> BudgetManagerAgent:
     return BudgetManagerAgent()
 
 
-# In-process task store (replaced in tests via app.dependency_overrides)
-# Key: task_id → PipelineStatusResponse-compatible dict
+# In-process task store (replaced in tests via app.dependency_overrides).
+# Lock guards concurrent reads/writes across async request handlers.
 _TASK_STORE: dict[str, dict] = {}
+_TASK_STORE_LOCK: asyncio.Lock = asyncio.Lock()
 
 
 def get_task_store() -> dict[str, dict]:
     return _TASK_STORE
+
+
+def get_task_store_lock() -> asyncio.Lock:
+    return _TASK_STORE_LOCK
 
 
 # FastAPI async dependency wrappers
@@ -73,3 +79,7 @@ async def budget_dep() -> BudgetManagerAgent:
 
 async def task_store_dep() -> dict[str, dict]:
     return get_task_store()
+
+
+async def task_store_lock_dep() -> asyncio.Lock:
+    return get_task_store_lock()

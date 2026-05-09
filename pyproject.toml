@@ -29,6 +29,15 @@ dependencies = [
     "colorama>=0.4.6",
     "fastapi>=0.110.0",
     "uvicorn[standard]>=0.27.0",
+    # MCP + LLM backend (Tier-2/3 workers, MCP server)
+    "anthropic>=0.40.0",
+    "mcp>=1.0.0",
+    # Auth + secrets
+    "python-dotenv>=1.0.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    # Knowledge graph
+    "neo4j>=5.0.0",
 ]
 
 [project.optional-dependencies]
@@ -42,7 +51,12 @@ dev = [
 
 [project.scripts]
 geosupply = "geosupply.cli.audit:main"
+geosupply-start = "geosupply.cli.start:main"
 geosupply-api = "geosupply.api.main:main"
+geosupply-mcp = "geosupply.mcp.server:main"
+geosupply-admin = "geosupply.cli.admin_cli:main"
+geosupply-dashboard = "geosupply.dashboard.admin_dashboard:main"
+geosupply-playground = "geosupply.dashboard.playground:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

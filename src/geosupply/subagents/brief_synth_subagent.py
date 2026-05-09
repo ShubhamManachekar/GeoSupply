@@ -103,60 +103,124 @@ class BriefSynthSubAgent(BaseSubAgent):
         self._proposals_store: list[dict] = []  # in-memory fallback when db_path is None
         self._breaker_failures: int = 0
         self._breaker_open: bool = False
+        self._tier2_cost: float = 0.0
+        self._tier3_cost: float = 0.0
 
     # ------------------------------------------------------------------
     # Deterministic proposers (Step 1)
     # ------------------------------------------------------------------
 
-    async def _propose_tier3(
+    async def _propose_tier1(
         self, claim_text: str, source_credibility: float, trace_id: str
     ) -> BriefProposal:
-        await asyncio.sleep(0)
-        confidence = 0.78
-        factcheck_score = source_credibility * 0.9
+        from geosupply.workers.claim_worker import ClaimWorker
+        from geosupply.workers.sentiment_worker import SentimentWorker
+        from geosupply.workers.ner_worker import NERWorker
+
+        claim_r, sentiment_r, ner_r = await asyncio.gather(
+            ClaimWorker().process({"text": claim_text, "trace_id": trace_id}),
+            SentimentWorker().process({"text": claim_text, "trace_id": trace_id}),
+            NERWorker().process({"text": claim_text, "trace_id": trace_id}),
+        )
+
+        claims: list[str] = claim_r.get("result", {}).get("claims", [])
+        polarity: float = abs(sentiment_r.get("result", {}).get("polarity", 0.0))
+        entities: list[str] = [e.get("text", "") for e in ner_r.get("result", {}).get("entities", [])]
+        sentences = claim_text.split(". ")
+        claim_density = len(claims) / max(1, len(sentences))
+
+        entity_str = ", ".join(entities[:5]) if entities else "unspecified entities"
+        claim_str = "; ".join(claims[:3]) if claims else claim_text[:120]
+        brief_text = (
+            f"[Tier1] Key entities: {entity_str}. Claims: {claim_str}. "
+            f"Source credibility: {source_credibility:.2f}."
+        )
+        confidence = round(0.4 * min(1.0, claim_density) + 0.3 * source_credibility + 0.3 * polarity, 4)
+        factcheck_score = round(source_credibility * min(1.0, claim_density + 0.1), 4)
+        claim_evidence_ratio = round(min(1.0, len(claims) / max(1, len(sentences))), 4)
+
         return BriefProposal(
-            proposal_id=f"{trace_id}_3",
-            trace_id=trace_id,
-            brief_text=f"[Tier3] {claim_text[:80]} — comprehensive analysis.",
-            confidence=confidence,
-            proposer_tier=3,
-            factcheck_score=factcheck_score,
-            source_credibility_avg=source_credibility,
-            claim_evidence_ratio=0.75,
+            proposal_id=f"{trace_id}_1", trace_id=trace_id, brief_text=brief_text,
+            confidence=confidence, proposer_tier=1, factcheck_score=factcheck_score,
+            source_credibility_avg=source_credibility, claim_evidence_ratio=claim_evidence_ratio,
         )
 
     async def _propose_tier2(
         self, claim_text: str, source_credibility: float, trace_id: str
     ) -> BriefProposal:
-        await asyncio.sleep(0)
-        confidence = 0.74
-        factcheck_score = source_credibility * 0.9
+        from geosupply.subagents.nlp_pipeline_subagent import NLPPipelineSubAgent
+        from geosupply.subagents.source_cluster_subagent import SourceClusterSubAgent
+
+        nlp_out, cluster_out = await asyncio.gather(
+            NLPPipelineSubAgent().run({"text": claim_text, "trace_id": trace_id}),
+            SourceClusterSubAgent().run({"texts": [claim_text], "trace_id": trace_id}),
+        )
+        nlp_r = nlp_out.get("result", {})
+        entities = [e.get("text", "") for e in nlp_r.get("entities", [])[:5]]
+        claims = nlp_r.get("claims", [])
+        sentiment = nlp_r.get("sentiment") or {}
+        clusters: int = cluster_out.get("result", {}).get("cluster_count", 1)
+        polarity_abs = abs(sentiment.get("polarity", 0.0))
+        subjectivity = sentiment.get("subjectivity", 0.5)
+        sentences = claim_text.split(". ")
+        claim_ratio = min(1.0, len(claims) / max(1, len(sentences)))
+
+        brief_text = (
+            f"[Tier2] Entities: {', '.join(entities) or 'unknown'}. "
+            f"Claims: {'; '.join(claims[:3]) if claims else claim_text[:120]}. "
+            f"Sentiment polarity: {sentiment.get('polarity', 0.0):.2f}. Source clusters: {clusters}."
+        )
+        confidence = round(0.4 * source_credibility + 0.3 * polarity_abs + 0.3 * claim_ratio, 4)
+        factcheck_score = round(source_credibility * (1.0 - subjectivity * 0.2), 4)
+
+        nlp_cost = nlp_out.get("meta", {}).get("cost_inr", 0.0)
+        cluster_cost = cluster_out.get("meta", {}).get("cost_inr", 0.0)
+        self._tier2_cost = round(nlp_cost + cluster_cost, 6)
+
         return BriefProposal(
-            proposal_id=f"{trace_id}_2",
-            trace_id=trace_id,
-            brief_text=f"[Tier2] {claim_text[:80]} — concise summary.",
-            confidence=confidence,
-            proposer_tier=2,
-            factcheck_score=factcheck_score,
-            source_credibility_avg=source_credibility,
-            claim_evidence_ratio=0.75,
+            proposal_id=f"{trace_id}_2", trace_id=trace_id, brief_text=brief_text,
+            confidence=confidence, proposer_tier=2, factcheck_score=factcheck_score,
+            source_credibility_avg=source_credibility, claim_evidence_ratio=claim_ratio,
         )
 
-    async def _propose_tier1(
+    async def _propose_tier3(
         self, claim_text: str, source_credibility: float, trace_id: str
     ) -> BriefProposal:
-        await asyncio.sleep(0)
-        confidence = 0.71
-        factcheck_score = source_credibility * 0.9
+        from geosupply.subagents.rag_pipeline_subagent import RAGPipelineSubAgent
+        from geosupply.subagents.graph_rag_subagent import GraphRAGSubAgent
+
+        rag_out, grag_out = await asyncio.gather(
+            RAGPipelineSubAgent().run({"query": claim_text, "trace_id": trace_id, "top_k": 5}),
+            GraphRAGSubAgent().run({"query": claim_text, "trace_id": trace_id, "max_hops": 2}),
+        )
+        rag_r = rag_out.get("result", {})
+        grag_r = grag_out.get("result", {})
+        rag_chunks = [c.get("text", "") for c in rag_r.get("chunks", [])[:3]]
+        kg_paths = [str(p) for p in grag_r.get("paths", [])[:2]]
+        retrieval_score: float = rag_r.get("retrieval_score", 0.0)
+
+        context_str = " ".join(rag_chunks[:2])[:200] if rag_chunks else "No context retrieved."
+        kg_str = "; ".join(kg_paths) if kg_paths else "No graph paths."
+        brief_text = (
+            f"[Tier3] {claim_text[:100]}. Context: {context_str} KG evidence: {kg_str}."
+        )
+        confidence = round(
+            0.5 * min(1.0, retrieval_score)
+            + 0.3 * source_credibility
+            + 0.2 * (1.0 if rag_chunks else 0.0),
+            4,
+        )
+        factcheck_score = round(source_credibility * min(1.0, retrieval_score + 0.2), 4)
+        claim_evidence_ratio = min(1.0, round(len(rag_chunks) / 3.0, 4))
+
+        rag_cost = rag_out.get("meta", {}).get("cost_inr", 0.0)
+        grag_cost = grag_out.get("meta", {}).get("cost_inr", 0.0)
+        self._tier3_cost = round(rag_cost + grag_cost, 6)
+
         return BriefProposal(
-            proposal_id=f"{trace_id}_1",
-            trace_id=trace_id,
-            brief_text=f"[Tier1] {claim_text[:80]} — bullet points.",
-            confidence=confidence,
-            proposer_tier=1,
-            factcheck_score=factcheck_score,
-            source_credibility_avg=source_credibility,
-            claim_evidence_ratio=0.75,
+            proposal_id=f"{trace_id}_3", trace_id=trace_id, brief_text=brief_text,
+            confidence=confidence, proposer_tier=3, factcheck_score=factcheck_score,
+            source_credibility_avg=source_credibility, claim_evidence_ratio=claim_evidence_ratio,
         )
 
     # ------------------------------------------------------------------
@@ -164,29 +228,31 @@ class BriefSynthSubAgent(BaseSubAgent):
     # ------------------------------------------------------------------
 
     def _save_proposals(self, proposals: list[BriefProposal]) -> None:
-        """Persist proposals to SQLite and in-memory store."""
+        """Persist proposals to SQLite inside a transaction, then mirror to in-memory store."""
         if self._db_path is not None:
-            conn = sqlite3.connect(self._db_path)
-            try:
-                conn.execute(_CREATE_TABLE_SQL)
-                for p in proposals:
-                    conn.execute(
-                        _INSERT_SQL,
-                        (
-                            p.proposal_id,
-                            p.trace_id,
-                            p.brief_text,
-                            p.confidence,
-                            p.proposer_tier,
-                            p.factcheck_score,
-                            p.source_credibility_avg,
-                            p.claim_evidence_ratio,
-                            p.created_at.isoformat(),
-                        ),
-                    )
-                conn.commit()
-            finally:
-                conn.close()
+            with sqlite3.connect(self._db_path, timeout=5.0) as conn:
+                conn.execute("BEGIN")
+                try:
+                    conn.execute(_CREATE_TABLE_SQL)
+                    for p in proposals:
+                        conn.execute(
+                            _INSERT_SQL,
+                            (
+                                p.proposal_id,
+                                p.trace_id,
+                                p.brief_text,
+                                p.confidence,
+                                p.proposer_tier,
+                                p.factcheck_score,
+                                p.source_credibility_avg,
+                                p.claim_evidence_ratio,
+                                p.created_at.isoformat(),
+                            ),
+                        )
+                    conn.execute("COMMIT")
+                except sqlite3.Error:
+                    conn.execute("ROLLBACK")
+                    raise
 
         # Always append to in-memory audit trail
         for p in proposals:
@@ -269,9 +335,9 @@ class BriefSynthSubAgent(BaseSubAgent):
                 "proposal_ids": [p.proposal_id for p in proposals],
                 "cost_breakdown": {
                     "tier1": 0.0,
-                    "tier2": 0.0,
-                    "tier3": 0.0,
-                    "total": 0.0,
+                    "tier2": self._tier2_cost,
+                    "tier3": self._tier3_cost,
+                    "total": round(self._tier2_cost + self._tier3_cost, 6),
                 },
             },
             "meta": {
