@@ -21,12 +21,30 @@ logger = logging.getLogger(__name__)
 
 # (label, region tag, url) — all free public feeds
 FEEDS: list[tuple[str, str, str]] = [
+    # Global wire
     ("BBC World",      "GLOBAL", "https://feeds.bbci.co.uk/news/world/rss.xml"),
     ("Al Jazeera",     "GLOBAL", "https://www.aljazeera.com/xml/rss/all.xml"),
+    ("DW News",        "GLOBAL", "https://rss.dw.com/rdf/rss-en-world"),
+    ("France 24",      "GLOBAL", "https://www.france24.com/en/rss"),
+    ("Google News World", "GLOBAL",
+     "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en"),
+    ("The Diplomat",   "ASIA",   "https://thediplomat.com/feed/"),
+    # Defence / conflict
+    ("Defense News",   "DEFENCE",
+     "https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml"),
+    # Maritime / supply chain
     ("gCaptain",       "MARITIME", "https://gcaptain.com/feed/"),
+    ("Splash247",      "MARITIME", "https://splash247.com/feed/"),
+    # India focus
     ("The Hindu",      "INDIA",  "https://www.thehindu.com/news/national/feeder/default.rss"),
     ("Times of India", "INDIA",  "https://timesofindia.indiatimes.com/rssfeedstopstories.cms"),
-    ("DW News",        "GLOBAL", "https://rss.dw.com/rdf/rss-en-world"),
+    ("NDTV World",     "INDIA",  "https://feeds.feedburner.com/ndtvnews-world-news"),
+    ("Hindustan Times", "INDIA",
+     "https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml"),
+    ("Economic Times", "INDIA",
+     "https://economictimes.indiatimes.com/rssfeedsdefault.cms"),
+    ("Google News India", "INDIA",
+     "https://news.google.com/rss/search?q=india+geopolitics+OR+defence+OR+trade&hl=en-IN&gl=IN&ceid=IN:en"),
 ]
 
 _ATOM_NS = "{http://www.w3.org/2005/Atom}"

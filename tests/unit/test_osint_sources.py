@@ -199,7 +199,7 @@ class TestEonetParser:
         assert ev.category == "disaster"
         assert ev.lat == -10.4 and ev.lon == 54.9
         assert ev.severity == 6.5  # severeStorms weight
-        assert ev.url.startswith("https://gdacs.org")
+        assert ev.url == "https://gdacs.org/report?eventid=1"  # exact match (CodeQL)
 
     def test_empty(self):
         assert parse_eonet({"events": []}) == []

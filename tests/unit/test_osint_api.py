@@ -55,7 +55,8 @@ def _route_request(req: httpx.Request) -> httpx.Response:
 
 
 @pytest.fixture
-async def aggregator():
+async def aggregator(tmp_path, monkeypatch):
+    monkeypatch.setenv("OSINT_STATE_PATH", str(tmp_path / "learning.json"))
     client = httpx.AsyncClient(transport=httpx.MockTransport(_route_request))
     agg = OsintAggregator(client=client)
     await agg.setup()
@@ -91,6 +92,35 @@ class TestAggregator:
         snap2 = await aggregator.refresh()    # TTL-gated — served from cache
         assert snap2.generated_at >= snap1.generated_at
         assert len(snap2.events) == len(snap1.events)
+
+    async def test_intelligence_suite_in_snapshot(self, aggregator):
+        snap = await aggregator.refresh(force=True)
+        assert len(snap.war_zones) == 11
+        assert all(0.0 <= z.intensity <= 1.0 for z in snap.war_zones)
+        assert snap.source_bias                 # bias handler profiled the wire
+        assert snap.learning.cycles == 1
+        assert snap.learning.kg_edges >= 0
+        assert snap.learning.refresh_interval_s > 0
+
+    async def test_learning_state_persists_across_instances(self, aggregator, tmp_path):
+        await aggregator.refresh(force=True)
+        aggregator.save_state()
+        restored = OsintAggregator(client=aggregator._client)
+        restored.load_state()
+        assert restored._cycles == 1
+        assert restored.bias.to_state() == aggregator.bias.to_state()
+
+    async def test_surge_mode_on_flash_activity(self, aggregator):
+        from geosupply.osint.models import ConvergenceAlert
+        alert = ConvergenceAlert(id="x", title="t", lat=0, lon=0,
+                                 asset_kind="port", signals=["a", "b"], severity=3)
+        aggregator._adapt_interval([alert], [])
+        assert aggregator._surge is True
+        assert aggregator._interval_s == 60.0
+        aggregator._cycles = 10
+        aggregator._adapt_interval([], [])
+        assert aggregator._surge is False
+        assert aggregator._interval_s == 300.0  # quiet world slows down
 
     async def test_scheduler_start_stop(self, aggregator):
         aggregator.start_scheduler()
@@ -154,6 +184,50 @@ class TestOsintEndpoints:
         resp = await api_client.get("/osint/sources/health")
         row = resp.json()[0]
         assert {"name", "ok", "breaker_state", "items"} <= set(row.keys())
+
+    async def test_warzones_endpoint(self, api_client):
+        resp = await api_client.get("/osint/warzones")
+        assert resp.status_code == 200
+        zones = resp.json()
+        assert len(zones) == 11
+        assert {"id", "kind", "intensity", "polygon"} <= set(zones[0].keys())
+
+    async def test_ask_endpoint(self, api_client):
+        resp = await api_client.get("/osint/ask", params={"q": "red sea shipping risk"})
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["query"] == "red sea shipping risk"
+        assert "answer" in body and "citations" in body
+        assert body["cost_inr"] == 0.0
+
+    async def test_graph_endpoint(self, api_client):
+        resp = await api_client.get("/osint/graph")
+        assert resp.status_code == 200
+        assert isinstance(resp.json(), list)
+
+    async def test_streams_endpoint_and_region_filter(self, api_client):
+        resp = await api_client.get("/osint/streams")
+        streams = resp.json()
+        assert len(streams) == 10
+        assert all(s["embed_url"].startswith("https://www.youtube.com/embed/")
+                   for s in streams)
+        india = (await api_client.get("/osint/streams",
+                                      params={"region": "india"})).json()
+        assert india and all(s["region"] == "INDIA" for s in india)
+
+    async def test_focus_countries_india_first(self, api_client):
+        resp = await api_client.get("/osint/focus/countries")
+        countries = resp.json()
+        assert countries[0]["iso2"] == "IN"      # India-first focus registry
+        assert {"lat", "lon", "zoom"} <= set(countries[0].keys())
+        assert len(countries) == 30
+
+    async def test_sources_bias_endpoint(self, api_client):
+        resp = await api_client.get("/osint/sources/bias")
+        assert resp.status_code == 200
+        rows = resp.json()
+        assert rows
+        assert {"source", "credibility", "sensationalism"} <= set(rows[0].keys())
 
 
 # ---------------------------------------------------------------------------

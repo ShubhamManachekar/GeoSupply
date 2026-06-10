@@ -16,14 +16,22 @@ from geosupply.osint.models import (
     ChokepointStatus,
     ConvergenceAlert,
     CountryRisk,
+    FocusCountry,
+    IntelAnswer,
     IntelHighlight,
+    KGEdge,
+    LiveStream,
     MarketQuote,
     NewsItem,
     OsintEvent,
     OsintSnapshot,
     PortStatus,
+    SourceBias,
     SourceHealth,
+    WarZone,
 )
+from geosupply.osint.rag import answer_query
+from geosupply.osint.registry import COUNTRY_CENTROIDS, COUNTRY_GAZETTEER, LIVE_STREAMS
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +103,67 @@ async def osint_highlights(agg: OsintAggregator = Depends(aggregator_dep)):
 async def osint_alerts(agg: OsintAggregator = Depends(aggregator_dep)):
     """Multi-signal convergence alerts around chokepoints / Indian ports."""
     return agg.snapshot().alerts
+
+
+@router.get("/warzones", response_model=list[WarZone])
+async def osint_warzones(agg: OsintAggregator = Depends(aggregator_dep)):
+    """Active war / blockade / exclusion zones with live intensity."""
+    return agg.snapshot().war_zones
+
+
+@router.get("/graph", response_model=list[KGEdge])
+async def osint_graph(
+    entity: str | None = Query(default=None),
+    limit: int = Query(default=15, ge=1, le=100),
+    agg: OsintAggregator = Depends(aggregator_dep),
+):
+    """Live knowledge-graph relations, optionally for one entity."""
+    if entity:
+        return agg.kg.edges_for(entity)[:limit]
+    return agg.kg.top_edges(limit)
+
+
+@router.get("/ask", response_model=IntelAnswer)
+async def osint_ask(
+    q: str = Query(min_length=2, max_length=300),
+    agg: OsintAggregator = Depends(aggregator_dep),
+):
+    """Agentic RAG over the live snapshot: plan → retrieve → KG hop → answer."""
+    return answer_query(q, agg.snapshot(), agg.kg)
+
+
+@router.get("/sources/bias", response_model=list[SourceBias])
+async def osint_sources_bias(agg: OsintAggregator = Depends(aggregator_dep)):
+    """News-analysis profiles with learned per-outlet credibility."""
+    return agg.snapshot().source_bias
+
+
+@router.get("/streams", response_model=list[LiveStream])
+async def osint_streams(region: str | None = Query(default=None)):
+    """Curated live news streams / public cams (official YouTube lives)."""
+    streams = [
+        LiveStream(
+            id=s["id"], name=s["name"], kind=s["kind"], region=s["region"],
+            embed_url=f"https://www.youtube.com/embed/live_stream?channel={s['channel_id']}",
+        )
+        for s in LIVE_STREAMS
+    ]
+    if region:
+        streams = [s for s in streams if s.region == region.upper()]
+    return streams
+
+
+@router.get("/focus/countries", response_model=list[FocusCountry])
+async def osint_focus_countries():
+    """Focus-mode registry: countries with map centroids (India first)."""
+    countries = [
+        FocusCountry(iso2=iso2, name=COUNTRY_GAZETTEER[iso2][0],
+                     lat=lat, lon=lon, zoom=zoom)
+        for iso2, (lat, lon, zoom) in COUNTRY_CENTROIDS.items()
+        if iso2 in COUNTRY_GAZETTEER
+    ]
+    countries.sort(key=lambda c: (c.iso2 != "IN", c.name))
+    return countries
 
 
 @router.get("/sources/health", response_model=list[SourceHealth])

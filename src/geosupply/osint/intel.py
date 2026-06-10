@@ -26,7 +26,8 @@ from geosupply.osint.models import (
     OsintEvent,
     PortStatus,
 )
-from geosupply.osint.registry import CHOKEPOINTS, COUNTRY_GAZETTEER
+from geosupply.osint.models import WarZone
+from geosupply.osint.registry import CHOKEPOINTS, COUNTRY_GAZETTEER, WAR_ZONES
 
 _EARTH_RADIUS_KM = 6371.0
 
@@ -85,21 +86,32 @@ def compute_chokepoint_stress(events: list[OsintEvent]) -> list[ChokepointStatus
     return statuses
 
 
-def compute_country_risk(news: list[NewsItem], events: list[OsintEvent]) -> list[CountryRisk]:
+def compute_country_risk(
+    news: list[NewsItem],
+    events: list[OsintEvent],
+    source_weights: dict[str, float] | None = None,
+) -> list[CountryRisk]:
     """
     Gazetteer scan over live headlines: each country mention scores by the
     crisis keywords co-occurring in the same headline. Normalised 0-100.
+
+    source_weights (bias handler): learned credibility per outlet — a
+    chronically uncorroborated source moves the index less.
     """
     raw: dict[str, float] = {}
     mentions: Counter[str] = Counter()
     drivers: dict[str, Counter[str]] = {}
 
-    titles = [(n.title.lower(), n.priority) for n in news]
-    titles += [(e.title.lower(), 2) for e in events if e.category == "conflict"]
+    titles = [
+        (n.title.lower(), n.priority,
+         0.5 + (source_weights or {}).get(n.source, 0.5))
+        for n in news
+    ]
+    titles += [(e.title.lower(), 2, 1.0) for e in events if e.category == "conflict"]
 
-    for title, priority in titles:
+    for title, priority, weight in titles:
         kw_score = sum(w for kw, w in _CRISIS_WEIGHTS.items() if kw in title)
-        base = 0.5 + 0.5 * priority + kw_score
+        base = (0.5 + 0.5 * priority + kw_score) * weight
         for iso2, (_, aliases) in COUNTRY_GAZETTEER.items():
             if any(alias in title for alias in aliases):
                 raw[iso2] = raw.get(iso2, 0.0) + base
@@ -244,6 +256,46 @@ def detect_convergence(
 
     alerts.sort(key=lambda a: a.severity, reverse=True)
     return alerts
+
+
+def geo_circle(lat: float, lon: float, radius_km: float, points: int = 48) -> list[list[float]]:
+    """Geographically-correct circle ring [[lon,lat],...] for map polygons."""
+    ring: list[list[float]] = []
+    dlat = radius_km / 111.32
+    coslat = max(0.01, math.cos(math.radians(lat)))
+    dlon = radius_km / (111.32 * coslat)
+    for i in range(points + 1):
+        theta = 2 * math.pi * i / points
+        ring.append([round(lon + dlon * math.cos(theta), 4),
+                     round(lat + dlat * math.sin(theta), 4)])
+    return ring
+
+
+def compute_war_zones(events: list[OsintEvent]) -> list[WarZone]:
+    """
+    Live intensity per registered war/blockade/exclusion zone:
+    baseline (structural fact) lifted by severity-weighted conflict-event
+    density inside the zone radius this cycle.
+    """
+    zones: list[WarZone] = []
+    conflict = [e for e in events if e.category in ("conflict", "maritime")]
+    for wz in WAR_ZONES:
+        weight = 0.0
+        nearby = 0
+        for ev in conflict:
+            if haversine_km(wz["lat"], wz["lon"], ev.lat, ev.lon) <= wz["radius_km"]:
+                nearby += 1
+                weight += max(ev.severity, 1.0)
+        live_lift = (1.0 - wz["baseline"]) * (1.0 - math.exp(-weight / 25.0))
+        zones.append(WarZone(
+            id=wz["id"], name=wz["name"], lat=wz["lat"], lon=wz["lon"],
+            radius_km=wz["radius_km"], kind=wz["kind"],
+            intensity=round(min(1.0, wz["baseline"] + live_lift), 3),
+            recent_events=nearby, description=wz["description"],
+            polygon=geo_circle(wz["lat"], wz["lon"], wz["radius_km"]),
+        ))
+    zones.sort(key=lambda z: z.intensity, reverse=True)
+    return zones
 
 
 def tag_entities(news: list[NewsItem]) -> None:

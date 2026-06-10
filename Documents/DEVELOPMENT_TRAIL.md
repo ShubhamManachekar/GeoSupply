@@ -15,7 +15,7 @@ ARCHITECTURE:   FA v3 (canonical docs), with FA v2/v10/v9 retained as reference 
 LANGUAGE:       Python 3.10+, async/await, Pydantic v2, type hints everywhere
 BUDGET CAP:     ₹500/month (LOCKED — all costs in INR, never USD)
 HALLUCINATION:  FLOOR = 0.70 (LOCKED — never lower)
-STATUS:         Session 30 | Workers:19 | Agents:11 | SubAgents:13 | Supervisors:14 | Tests:1172 | Schemas:32
+STATUS:         Session 30 | Workers:19 | Agents:11 | SubAgents:13 | Supervisors:14 | Tests:1201 | Schemas:32
                 Session 30: OSINT Command dashboard (world-monitor style) — backend
                             geosupply/osint with 7 free key-free live sources (USGS, NASA EONET,
                             GDELT GEO+DOC, RSS wire, markets, Open-Meteo port weather);
@@ -1416,8 +1416,43 @@ When switching AI models, the incoming model MUST:
    GEOSUPPLY_PYTEST_CHILD depth guard: real suite at top level, guarded result
    at nested depth. Full suite now terminates: 1172 passed in ~2 minutes.
 
+**Intelligence + focus pass (same session — third iteration)**:
+1. **Live knowledge graph** (`osint/knowledge_graph.py`): entity co-occurrence
+   edges from tagged headlines, G5 dedup key, priority-weighted reinforcement,
+   per-cycle decay + pruning; INTEL GRAPH panel + `/osint/graph?entity=`.
+2. **Agentic RAG** (`osint/rag.py`): v8 fixed sequence, deterministic ₹0 —
+   plan → parallel lexical retrieve → KG one-hop expansion → RRF fusion →
+   extractive synthesis with citations + confidence; ASK INTEL panel +
+   `/osint/ask?q=`.
+3. **News analysis / bias handler** (`osint/bias.py`): per-outlet
+   sensationalism + cross-outlet corroboration; learned credibility
+   (-0.05 uncorroborated flash / +0.02 recovery / floor 0.10) feeds back into
+   country-risk weighting; SOURCE TRUST panel + `/osint/sources/bias`.
+4. **Self-improving projections** (`osint/projection.py`): online-learned
+   exponential smoothing (alpha grid selected by rolling MAE), forecasts on
+   risk rows, honest MAE on the System panel.
+5. **Self-autonomous loop**: adaptive tempo (60s surge / 120s normal / 300s
+   quiet) + learning-state persistence (`data/osint_learning.json`, atomic
+   writes, survives restarts).
+6. **Focus mode**: `/osint/focus/countries` (India-first, 30 countries with
+   centroids), header selector + 🇮🇳 INDIA button + click-risk-row-to-focus;
+   filters wire/graph, flies the map.
+7. **War zones & blockades** (`registry.WAR_ZONES`, `intel.compute_war_zones`):
+   11 zones (Ukraine, Gaza, Red Sea blockade, Black Sea exclusion, Sudan,
+   Sahel, Myanmar, LAC, LoC, Taiwan ADIZ, Hormuz risk) with geo-correct
+   polygons, baseline + live conflict-density intensity; map overlay layer.
+8. **Live weather radar**: RainViewer key-free radar tiles as a map toggle.
+9. **Live streams**: 10 curated official YouTube live channels (AJ, DW,
+   France24, Sky, TRT, NDTV, India Today, WION, Times Now + EarthCam NYC),
+   `/osint/streams?region=`, in-dashboard player modal.
+10. **Wire expanded 6 → 15 feeds**: + France 24, Google News World/India,
+    The Diplomat, Defense News, Splash247, NDTV, Hindustan Times,
+    Economic Times.
+- OSINT tests now 88; full suite 1201 passed (~2.5 min).
+- CodeQL fix: exact-match URL assertion in EONET test (was startswith).
+
 **Next priorities**:
 - Wire IntelBrief (BriefSynthSubAgent MoA) output into the Situation Brief panel.
 - Optional keyed sources behind SecurityAgent.get_key(): NASA FIRMS, OpenSky, AISStream.
-- Country-risk choropleth layer + remaining India dashboard panels (LAC tracker,
-  DGFT/RBI policy feeds, IOR tracker) + suppliers/predict panels.
+- Country-risk choropleth layer + remaining India dashboard panels (DGFT/RBI
+  policy feeds, IOR tracker) + suppliers/predict panels.

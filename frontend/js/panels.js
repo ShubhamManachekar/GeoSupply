@@ -4,6 +4,21 @@
 const Panels = (() => {
   let feedMinPriority = 0;
   let lastSnap = null;
+  let focus = null;   // {iso2, name} or null = GLOBAL
+
+  // ── focus mode ────────────────────────────────────────────────
+  function setFocus(f) {
+    focus = f;
+    if (lastSnap) renderAll(lastSnap);
+  }
+
+  function inFocus(item) {
+    if (!focus) return true;
+    const ents = item.entities || [];
+    if (ents.includes(focus.name)) return true;
+    if (focus.iso2 === "IN" && item.region === "INDIA") return true;
+    return false;
+  }
 
   // ── Situation brief (+ convergence alert strip) ───────────────
   function renderBrief(snap) {
@@ -32,8 +47,12 @@ const Panels = (() => {
   // ── Live wire ─────────────────────────────────────────────────
   function renderFeed(snap) {
     const body = document.getElementById("feed-body");
-    const items = (snap.news || []).filter((n) => n.priority >= feedMinPriority);
-    if (!items.length) { body.innerHTML = '<div class="empty">No wire items at this filter</div>'; return; }
+    let items = (snap.news || []).filter((n) => n.priority >= feedMinPriority);
+    if (focus) items = items.filter(inFocus);
+    if (!items.length) {
+      body.innerHTML = `<div class="empty">No wire items${focus ? " for " + Util.esc(focus.name) : ""} at this filter</div>`;
+      return;
+    }
     body.innerHTML = items.slice(0, 60).map((n) => {
       const open = n.url ? ` data-url="${Util.esc(n.url)}"` : "";
       return `<div class="feed-item"${open}>
@@ -64,7 +83,7 @@ const Panels = (() => {
     ).join("");
   }
 
-  // ── Global risk ───────────────────────────────────────────────
+  // ── Global risk (CI + trend + projection) ─────────────────────
   function renderRisk(snap) {
     const body = document.getElementById("risk-body");
     const risks = (snap.country_risk || []).slice(0, 12);
@@ -73,7 +92,10 @@ const Panels = (() => {
       const ciLeft = r.ci_low ?? r.score;
       const ciWidth = Math.max(0, (r.ci_high ?? r.score) - ciLeft);
       const lowConf = r.data_density === "SPARSE" && ciWidth > 30;
-      return `<div class="risk-row">
+      const focused = focus && focus.iso2 === r.iso2 ? " risk-focused" : "";
+      const proj = r.projected_score !== null && r.projected_score !== undefined
+        ? ` · proj ${Math.round(r.projected_score)}` : "";
+      return `<div class="risk-row${focused}" data-iso2="${r.iso2}" data-name="${Util.esc(r.name)}">
         <span class="risk-iso">${Util.esc(r.iso2)}</span>
         <span class="risk-name">${Util.trendArrow(r.trend)} ${Util.esc(r.name)}</span>
         <span class="risk-bar-wrap">
@@ -84,10 +106,17 @@ const Panels = (() => {
         <span class="risk-drivers">
           ${lowConf ? '<span class="lowconf">LOW CONFIDENCE</span> ' : ""}
           ${r.drivers && r.drivers.length ? `▸ ${r.drivers.map(Util.esc).join(" · ")} · ` : ""}
-          ${r.mentions} signals · ${Util.esc(r.data_density || "")} density · CI ${Math.round(ciLeft)}–${Math.round(r.ci_high ?? r.score)}
+          ${r.mentions} signals · ${Util.esc(r.data_density || "")} · CI ${Math.round(ciLeft)}–${Math.round(r.ci_high ?? r.score)}${proj}
         </span>
       </div>`;
     }).join("");
+    body.querySelectorAll(".risk-row").forEach((el) => {
+      el.addEventListener("click", () => {
+        const evt = new CustomEvent("focus-country", {
+          detail: { iso2: el.dataset.iso2, name: el.dataset.name } });
+        document.dispatchEvent(evt);
+      });
+    });
   }
 
   // ── Chokepoints ───────────────────────────────────────────────
@@ -107,6 +136,57 @@ const Panels = (() => {
         <div class="choke-sub">${pct}% stress · ${c.recent_events} nearby events · ~${c.daily_transits} transits/day</div>
       </div>`;
     }).join("");
+  }
+
+  // ── Intel graph ───────────────────────────────────────────────
+  function renderGraph(snap) {
+    const body = document.getElementById("graph-body");
+    let edges = snap.graph_edges || [];
+    if (focus) {
+      const filtered = edges.filter((e) => e.source === focus.name || e.target === focus.name);
+      if (filtered.length) edges = filtered;
+    }
+    document.getElementById("graph-tag").textContent =
+      focus ? `LINKS · ${focus.name.toUpperCase()}` : "CO-REPORTED";
+    if (!edges.length) { body.innerHTML = '<div class="empty">Graph is learning from the wire…</div>'; return; }
+    const maxW = Math.max(...edges.map((e) => e.weight), 1);
+    body.innerHTML = edges.slice(0, 10).map((e) =>
+      `<div class="kg-row" title="${Util.esc((e.contexts || [])[0] || "")}">
+        <span class="kg-pair">${Util.esc(e.source)} <i>⟷</i> ${Util.esc(e.target)}</span>
+        <span class="kg-bar-wrap"><span class="kg-bar" style="width:${Math.round(100 * e.weight / maxW)}%"></span></span>
+        <span class="kg-w">${e.weight.toFixed(1)}</span>
+      </div>`
+    ).join("");
+  }
+
+  // ── Live streams ──────────────────────────────────────────────
+  function renderStreams(streams) {
+    const body = document.getElementById("streams-body");
+    if (!streams || !streams.length) {
+      body.innerHTML = '<div class="empty">No streams configured</div>'; return;
+    }
+    body.innerHTML = streams.map((s) =>
+      `<div class="stream-row" data-url="${Util.esc(s.embed_url)}" data-name="${Util.esc(s.name)}">
+        <span class="stream-kind sk-${s.kind}">${s.kind === "cam" ? "CAM" : "LIVE"}</span>
+        <span class="stream-name">${Util.esc(s.name)}</span>
+        <span class="stream-region">${Util.esc(s.region)}</span>
+        <span class="stream-play">▶</span>
+      </div>`
+    ).join("");
+    body.querySelectorAll(".stream-row").forEach((el) => {
+      el.addEventListener("click", () => openStream(el.dataset.name, el.dataset.url));
+    });
+  }
+
+  function openStream(name, url) {
+    document.getElementById("stream-title").textContent = name;
+    document.getElementById("stream-frame").src = url + "&autoplay=1";
+    document.getElementById("stream-modal").classList.remove("hidden");
+  }
+
+  function closeStream() {
+    document.getElementById("stream-frame").src = "";
+    document.getElementById("stream-modal").classList.add("hidden");
   }
 
   // ── Markets ───────────────────────────────────────────────────
@@ -141,12 +221,38 @@ const Panels = (() => {
     }).join("");
   }
 
-  // ── System / sources ──────────────────────────────────────────
+  // ── Source trust (bias handler) ───────────────────────────────
+  function renderBias(snap) {
+    const body = document.getElementById("bias-body");
+    const rows = snap.source_bias || [];
+    if (!rows.length) { body.innerHTML = '<div class="empty">Learning source behaviour…</div>'; return; }
+    body.innerHTML = rows.slice(0, 12).map((b) => {
+      const pct = Math.round(b.credibility * 100);
+      const color = b.credibility >= 0.6 ? "var(--green)" :
+        b.credibility >= 0.35 ? "var(--amber)" : "var(--red-hot)";
+      const flags = (b.bias_flags || []).map((f) => `<span class="bflag">${Util.esc(f)}</span>`).join("");
+      return `<div class="bias-row" title="sensationalism ${(b.sensationalism * 100).toFixed(0)}% · corroboration ${(b.corroboration_rate * 100).toFixed(0)}% · ${b.items} items">
+        <span class="bias-src">${Util.esc(b.source)}</span>
+        <span class="kg-bar-wrap"><span class="kg-bar" style="width:${pct}%;background:${color}"></span></span>
+        <span class="kg-w">${pct}</span>
+        ${flags ? `<span class="bias-flags">${flags}</span>` : ""}
+      </div>`;
+    }).join("");
+  }
+
+  // ── System / sources / learning ───────────────────────────────
   function renderSystem(snap) {
     const body = document.getElementById("system-body");
     const srcs = snap.health || [];
     if (!srcs.length) { body.innerHTML = '<div class="empty">No source telemetry</div>'; return; }
-    body.innerHTML = srcs.map((s) => {
+    const learn = snap.learning || {};
+    const learnHtml = `<div class="learn-row">
+      cycle ${learn.cycles ?? 0} · tick ${Math.round(learn.refresh_interval_s ?? 120)}s${learn.surge_mode ? ' · <b class="surge">SURGE</b>' : ""}
+      · KG ${learn.kg_nodes ?? 0}n/${learn.kg_edges ?? 0}e
+      · proj MAE ${learn.projection_mae ?? "—"} (${learn.projection_samples ?? 0})
+      · ${learn.penalised_sources ?? 0} sources penalised
+    </div>`;
+    body.innerHTML = learnHtml + srcs.map((s) => {
       const led = s.ok ? "led-green" : (s.breaker_state === "OPEN" ? "led-red" : "led-amber");
       const meta = s.ok
         ? `${s.items} items · ${s.latency_ms ?? "—"}ms`
@@ -164,6 +270,21 @@ const Panels = (() => {
     srcLed.className = "led " + (okCount === srcs.length ? "led-green" : okCount > 0 ? "led-amber" : "led-red");
   }
 
+  // ── Ask intel ─────────────────────────────────────────────────
+  function renderAnswer(ans) {
+    const box = document.getElementById("ask-answer");
+    if (!ans) { box.innerHTML = ""; return; }
+    const cites = (ans.citations || []).slice(0, 5).map((c) => {
+      const link = c.url ? ` <a class="pop-link" href="${Util.esc(c.url)}" target="_blank" rel="noopener">↗</a>` : "";
+      return `<div class="cite"><span class="cite-kind">${Util.esc(c.kind)}</span> ${Util.esc(c.text)} <i>${Util.esc(c.source)}</i>${link}</div>`;
+    }).join("");
+    box.innerHTML = `
+      <div class="ask-conf">confidence ${(ans.confidence * 100).toFixed(0)}%
+        ${ans.entities && ans.entities.length ? " · " + ans.entities.map(Util.esc).join(", ") : ""}</div>
+      <div class="ask-text">${Util.esc(ans.answer)}</div>
+      ${cites}`;
+  }
+
   function renderAll(snap) {
     lastSnap = snap;
     renderBrief(snap);
@@ -171,8 +292,10 @@ const Panels = (() => {
     renderTicker(snap);
     renderRisk(snap);
     renderChokepoints(snap);
+    renderGraph(snap);
     renderMarkets(snap);
     renderIndia(snap);
+    renderBias(snap);
     renderSystem(snap);
   }
 
@@ -185,5 +308,10 @@ const Panels = (() => {
     if (lastSnap) renderFeed(lastSnap);
   });
 
-  return { renderAll };
+  document.getElementById("stream-close").addEventListener("click", closeStream);
+  document.getElementById("stream-modal").addEventListener("click", (evt) => {
+    if (evt.target.id === "stream-modal") closeStream();
+  });
+
+  return { renderAll, renderStreams, renderAnswer, setFocus };
 })();

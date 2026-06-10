@@ -65,6 +65,16 @@ body {
   padding: 4px 10px; cursor: pointer;
 }
 .chip-btn:hover { border-color: var(--accent); }
+.focus-block { display: flex; align-items: center; gap: 6px; }
+#focus-select {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+  background: var(--bg-panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 3px; padding: 4px 6px;
+  max-width: 150px; cursor: pointer;
+}
+#focus-select:focus { outline: none; border-color: var(--accent); }
+.india-btn { color: var(--amber); }
+.india-btn:hover { border-color: var(--amber); }
 
 /* ── Grid ───────────────────────────────────────────────────── */
 #grid {
@@ -116,6 +126,91 @@ body {
 .sev0 { background: var(--text-dim); } .sev1 { background: var(--cyan); }
 .sev2 { background: var(--amber); } .sev3 { background: var(--red-hot); box-shadow: 0 0 6px var(--red-hot); }
 .brief-text { font-size: 12px; line-height: 1.45; }
+
+/* ── Ask intel ──────────────────────────────────────────────── */
+#ask-input {
+  width: 100%; font-family: var(--mono); font-size: 11px;
+  background: var(--bg-panel-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 3px; padding: 6px 8px;
+}
+#ask-input:focus { outline: none; border-color: var(--accent); }
+#ask-answer { margin-top: 6px; max-height: 180px; overflow-y: auto; }
+.ask-conf { font-family: var(--mono); font-size: 9px; color: var(--accent); letter-spacing: 1px; margin-bottom: 3px; }
+.ask-text { font-size: 12px; line-height: 1.45; margin-bottom: 5px; }
+.cite { font-size: 10px; color: var(--text-dim); padding: 2px 0; border-top: 1px dotted #142030; }
+.cite-kind {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--cyan); border: 1px solid var(--border); border-radius: 2px; padding: 0 3px;
+}
+.cite i { color: #44586c; }
+
+/* ── Intel graph + source trust ─────────────────────────────── */
+.kg-row, .bias-row {
+  display: grid; grid-template-columns: 1fr 70px 28px; gap: 7px;
+  align-items: center; padding: 3px 0; font-size: 11px;
+}
+.kg-pair i { color: var(--accent); font-style: normal; font-size: 9px; }
+.kg-bar-wrap { height: 5px; background: #111c29; border-radius: 3px; overflow: hidden; }
+.kg-bar { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+.kg-w { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-align: right; }
+.bias-src { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bias-flags { grid-column: 1 / 4; }
+.bflag {
+  font-family: var(--mono); font-size: 8px; letter-spacing: .5px;
+  color: var(--red); border: 1px solid var(--red); border-radius: 2px;
+  padding: 0 3px; margin-right: 4px;
+}
+#panel-graph .panel-body, #panel-bias .panel-body { max-height: 190px; }
+
+/* ── Live streams ───────────────────────────────────────────── */
+#panel-streams .panel-body { max-height: 180px; }
+.stream-row {
+  display: flex; align-items: center; gap: 8px; padding: 4px 0;
+  cursor: pointer; border-bottom: 1px dotted #142030;
+}
+.stream-row:hover .stream-name { color: var(--accent); }
+.stream-kind {
+  font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: 1px;
+  padding: 1px 5px; border-radius: 2px;
+}
+.sk-news { color: var(--red); border: 1px solid var(--red); }
+.sk-cam { color: var(--cyan); border: 1px solid var(--cyan); }
+.stream-name { flex: 1; font-size: 12px; }
+.stream-region { font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
+.stream-play { color: var(--accent); font-size: 10px; }
+#stream-modal {
+  position: fixed; inset: 0; z-index: 50; background: rgba(2, 4, 7, .85);
+  display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+}
+#stream-modal.hidden { display: none; }
+#stream-box {
+  width: min(960px, 92vw); background: var(--bg-panel);
+  border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+}
+#stream-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; background: var(--bg-panel-2);
+  font-family: var(--mono); font-size: 11px; letter-spacing: 1px; color: var(--accent);
+}
+#stream-close {
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  background: none; border: 1px solid var(--border); border-radius: 3px;
+  padding: 3px 8px; cursor: pointer;
+}
+#stream-close:hover { color: var(--red); border-color: var(--red); }
+#stream-frame { width: 100%; aspect-ratio: 16 / 9; border: 0; display: block; background: #000; }
+
+/* ── Misc new dots / rows ───────────────────────────────────── */
+.dot-war { background: #ef4444; border: 1px solid #7f1d1d; }
+.dot-weather { background: #60a5fa; }
+.risk-row { cursor: pointer; }
+.risk-row.risk-focused { background: rgba(45, 212, 191, .07); border-radius: 3px; }
+.learn-row {
+  font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+  letter-spacing: .5px; padding: 2px 0 6px; border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.learn-row .surge { color: var(--red); }
 
 /* ── Convergence alerts ─────────────────────────────────────── */
 .conv-alert {
