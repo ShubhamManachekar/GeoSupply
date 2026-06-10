@@ -12,12 +12,19 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 
-from geosupply.api.routers import health, tasks, pipeline, brief, workers, budget, kg, audit, admin, playground
+from geosupply.api.routers import health, tasks, pipeline, brief, workers, budget, kg, audit, admin, playground, osint
 
 _log = logging.getLogger(__name__)
+
+FRONTEND_DIR = Path(__file__).resolve().parents[3] / "frontend"
 
 
 @asynccontextmanager
@@ -43,10 +50,21 @@ async def lifespan(app: FastAPI):
     installed = install_tracer()
     _log.info("Tracer: %s", "installed" if installed else "already active")
 
+    # OSINT live-dashboard layer: aggregator + background refresh scheduler.
+    # Disable autostart (e.g. in tests) with OSINT_AUTOSTART=0.
+    from geosupply.osint.aggregator import get_aggregator
+    aggregator = get_aggregator()
+    await aggregator.setup()
+    if os.getenv("OSINT_AUTOSTART", "1") != "0":
+        aggregator.start_scheduler()
+        _log.info("OSINT aggregator scheduler started")
+
     yield
 
     # Graceful shutdown: clear singleton caches so resources are released
     _log.info("Shutdown: clearing singleton caches")
+    await aggregator.teardown()
+    get_aggregator.cache_clear()
     get_swarm_master.cache_clear()
     get_budget_agent.cache_clear()
 
@@ -59,6 +77,12 @@ def create_app() -> FastAPI:
         description="India-centric geopolitical supply chain intelligence REST API",
         lifespan=lifespan,
     )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=os.getenv("OSINT_CORS_ORIGINS", "*").split(","),
+        allow_methods=["GET", "POST"],
+        allow_headers=["*"],
+    )
     app.include_router(health.router,    prefix="/health",    tags=["health"])
     app.include_router(tasks.router,     prefix="/tasks",     tags=["tasks"])
     app.include_router(pipeline.router,  prefix="/pipeline",  tags=["pipeline"])
@@ -69,6 +93,16 @@ def create_app() -> FastAPI:
     app.include_router(audit.router,      prefix="/audit",      tags=["audit"])
     app.include_router(admin.router,      prefix="/admin",      tags=["admin"])
     app.include_router(playground.router, prefix="/playground", tags=["playground"])
+    app.include_router(osint.router,      prefix="/osint",      tags=["osint"])
+
+    # OSINT dashboard frontend (world-monitor style SPA)
+    if FRONTEND_DIR.is_dir():
+        app.mount("/app", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+
+        @app.get("/", include_in_schema=False)
+        async def root_redirect():
+            return RedirectResponse(url="/app/")
+
     return app
 
 

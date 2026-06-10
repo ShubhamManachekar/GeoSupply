@@ -15,7 +15,16 @@ ARCHITECTURE:   FA v3 (canonical docs), with FA v2/v10/v9 retained as reference 
 LANGUAGE:       Python 3.10+, async/await, Pydantic v2, type hints everywhere
 BUDGET CAP:     ₹500/month (LOCKED — all costs in INR, never USD)
 HALLUCINATION:  FLOOR = 0.70 (LOCKED — never lower)
-STATUS:         Session 28 | Workers:19 | Agents:11 | SubAgents:13 | Supervisors:14 | Tests:963 | Schemas:32
+STATUS:         Session 30 | Workers:19 | Agents:11 | SubAgents:13 | Supervisors:14 | Tests:1172 | Schemas:32
+                Session 30: OSINT Command dashboard (world-monitor style) — backend
+                            geosupply/osint with 7 free key-free live sources (USGS, NASA EONET,
+                            GDELT GEO+DOC, RSS wire, markets, Open-Meteo port weather);
+                            middleware: TTL-cached single-writer OsintAggregator + WebSocket hub
+                            + background scheduler + /osint/* REST + /osint/ws; frontend/ SPA:
+                            MapLibre dark map (5 intel layers), live wire, situation brief,
+                            global risk index, chokepoint monitor, markets, India ports, source
+                            health. 40 new tests (real parsers/aggregator/WS over MockTransport
+                            with recorded real payloads). cost_inr = 0 for the entire layer.
                 Session 29: Full-codebase connectivity+logic audit complete; placeholder/stub terminology reduced + strict gate green
                 Session 28c: Local staging smoke verified (health, deep health, workers, audit, tasks lifecycle)
                 Session 28b: Documents lint normalization + trail/doc synchronization update
@@ -1326,3 +1335,89 @@ When switching AI models, the incoming model MUST:
 **Next priorities**:
 - Continue CodeRabbit-style minute-logic pass on residual non-runtime mock debt in test fixtures and selected unit tests while preserving ZERO-MOCK policy intent.
 - Continue Phase 9 remainder: Streamlit portal implementation with the now-verified backend and audit baseline.
+
+---
+
+### Session 30 — OSINT Command Dashboard (Backend + Middleware + Frontend)
+**Date**: 2026-06-10 IST
+**Model**: Claude (Claude Code) | **Type**: Feature Build — world-monitor-style live dashboard
+
+**Done**:
+1. **Backend — `src/geosupply/osint/` (new package)**:
+   - 7 live source connectors, all free and key-free (cost_inr = 0 for the layer):
+     `UsgsQuakeSource` (M2.5+ 24h), `EonetDisasterSource` (NASA EONET v3),
+     `GdeltConflictSource` (GEO 2.0 hotspot clusters), `GdeltNewsSource` (DOC 2.0
+     headlines), `RssNewsSource` (BBC/Al Jazeera/gCaptain/The Hindu/TOI/DW, stdlib
+     XML, RSS 2.0 + RDF + Atom), `MarketsSource` (er-api FX, CoinGecko, Stooq CSV),
+     `IndiaPortWeatherSource` (Open-Meteo batched, 12 major ports).
+   - `BaseSource`: TTL cache + circuit breaker + last-good-payload degradation +
+     per-source `SourceHealth` telemetry. Never raises across the boundary.
+   - `registry.py`: 9 maritime chokepoints, 12 India major ports, 30-country gazetteer.
+   - `intel.py`: derived analytics — haversine chokepoint stress index (saturating
+     severity-weighted event density), gazetteer country-risk scoring with crisis
+     keyword drivers, rule-based situation brief (no LLM on the critical path).
+   - `models.py`: 9 Pydantic v2 presentation schemas (OsintSnapshot et al.).
+2. **Middleware**:
+   - `OsintAggregator` — single-writer snapshot builder over all sources, asyncio
+     fan-out refresh, background scheduler loop (`OSINT_AUTOSTART=0` to disable).
+   - `OsintHub` — WebSocket fan-out with dead-client pruning.
+   - `api/routers/osint.py` — 9 read-only REST endpoints + `/osint/ws` stream.
+   - `api/main.py` — CORS, aggregator lifecycle in lifespan, `frontend/` static
+     mount at `/app` with `/` redirect.
+3. **Frontend — `frontend/` (no build step, CDN MapLibre GL)**:
+   - Dark OSINT command theme; MapLibre dark map with 5 toggleable layers
+     (conflict, seismic, disaster, chokepoints, India ports) + popups + counts.
+   - Panels: Situation Brief, Live Wire (priority filters INFO/NOTICE/ALERT/FLASH),
+     scrolling flash ticker, Global Risk Index, Chokepoint Monitor, Market Watch,
+     India Port Status, System // Sources health.
+   - Live link: WebSocket with REST polling fallback; UTC + IST clocks; LED chips.
+4. **Tests — 40 new (ZERO MOCKS philosophy)**:
+   - Real parsers fed real recorded payload structures; aggregator + REST + WS
+     exercised over `httpx.MockTransport` (external HTTP boundary only).
+   - TTL cache, breaker-open short-circuit, last-good degradation, dead-feed
+     resilience, WS connect/prune all covered with real logic.
+
+**Verification Results**:
+- New OSINT suite: 40/40 passed. Full suite re-run green (see CI).
+- Live server smoke: `/` → `/app/` redirect, static assets 200, `/osint/snapshot`
+  + `/osint/sources/health` 200, all frontend JS passes `node --check`.
+- Note: this build sandbox blocks outbound HTTP (403 on all upstreams) — graceful
+  degradation path verified live; sources are standard public APIs in production.
+
+**Files added (Session 30)**:
+- `src/geosupply/osint/` — `models.py`, `registry.py`, `intel.py`, `aggregator.py`,
+  `hub.py`, `sources/{base,usgs,eonet,gdelt,rss,markets,weather}.py`
+- `src/geosupply/api/routers/osint.py`
+- `frontend/` — `index.html`, `css/style.css`, `js/{util,map,panels,app}.js`, `README.md`
+- `tests/unit/test_osint_{sources,intel,api}.py`
+
+**Intelligence pass (same session — v8 doc recheck additions)**:
+1. **CI propagation (v8 Part 7.4 — P1)**: `CountryRisk` now carries `ci_low` /
+   `ci_high` / `data_density` (HIGH/MEDIUM/LOW/SPARSE), half-width ∝ 1/√n.
+   Frontend renders CI bands on risk bars + `LOW CONFIDENCE` label when
+   SPARSE + wide — the v8 `ci_visualisation` dashboard requirement.
+2. **Convergence alerts (v8 Phase 9 `convergence_alert.py`)**: ≥2 independent
+   signal types co-located around a chokepoint (conflict stress + disaster/
+   seismic) or Indian port (weather disruption + nearby event) → red
+   `ConvergenceAlert` strip leading the Situation Brief + `/osint/alerts`.
+3. **Trend vectors (v8 drift-vector spirit)**: 12-cycle history ring buffers in
+   the aggregator; RISING/FLAT/FALLING/NEW arrows on country risk + chokepoints.
+4. **Monsoon supply-chain risk (v8 MonsoonWorker panel)**: Open-Meteo 3-day
+   `precipitation_sum` forecast per port → LOW/MODERATE/HEAVY/EXTREME band;
+   HEAVY+ promotes an operational port to WATCH; ☔ badges in the India panel.
+5. **INR stress monitor (v8 India panel)**: Stooq intraday USDINR change folded
+   into the er-api USD/INR quote; ≥0.5% move → "INR stress" highlight (sev 1/2).
+6. **Headline entity tagging (NER-lite)**: country gazetteer + chokepoint names
+   matched per headline → entity chips in the Live Wire.
+- Test suite extended to 59 OSINT tests, all real-logic over MockTransport.
+7. **Recursion-bomb fix (pre-existing)**: UnitTestAgent/IntegrationTestAgent/
+   CoverageAgent/TestRunAgent spawned pytest over directories containing the
+   tests that invoke them — unbounded process recursion. Added
+   GEOSUPPLY_PYTEST_CHILD depth guard: real suite at top level, guarded result
+   at nested depth. Full suite now terminates: 1172 passed in ~2 minutes.
+
+**Next priorities**:
+- Wire IntelBrief (BriefSynthSubAgent MoA) output into the Situation Brief panel.
+- Optional keyed sources behind SecurityAgent.get_key(): NASA FIRMS, OpenSky, AISStream.
+- Country-risk choropleth layer + remaining India dashboard panels (LAC tracker,
+  DGFT/RBI policy feeds, IOR tracker) + suppliers/predict panels.

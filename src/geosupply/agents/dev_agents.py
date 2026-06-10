@@ -9,6 +9,7 @@ import logging
 import re
 from datetime import datetime, timezone
 
+from geosupply.agents.test_agents import _child_env, _guarded_result, _is_nested_run
 from geosupply.core.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
@@ -107,11 +108,14 @@ class TestRunAgent(BaseAgent):
         passed = 0
         failed = 0
         exit_code = 0
+        if _is_nested_run():
+            return _guarded_result(self.name, trace_id)
         try:
             proc = await asyncio.create_subprocess_exec(
                 "python", "-m", "pytest", path, "-q", "--tb=no",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                env=_child_env(),
             )
             stdout, _ = await proc.communicate()
             exit_code = proc.returncode or 0
