@@ -29,3 +29,4 @@ Thumbs.db
 # GeoSupply runtime data (ChromaDB, SQLite, backups, logs)
 data/
 
+coverage.json

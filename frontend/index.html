@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoSupply AI — OSINT Command</title>
+  <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;🛰️&lt;/text&gt;&lt;/svg&gt;" />
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- ───────────────────── HEADER ───────────────────── -->
+  <header id="topbar">
+    <div class="brand">
+      <span class="brand-mark">◉</span>
+      <span class="brand-name">GEOSUPPLY<span class="accent">AI</span></span>
+      <span class="brand-sub">OSINT COMMAND // INDIA-CENTRIC SUPPLY CHAIN INTEL</span>
+    </div>
+    <div class="topbar-right">
+      <div class="focus-block">
+        <span class="clock-label">FOCUS</span>
+        <select id="focus-select"><option value="">GLOBAL</option></select>
+        <button id="btn-india" class="chip-btn india-btn" title="Focus on India">🇮🇳 INDIA</button>
+      </div>
+      <div class="clock-block"><span class="clock-label">UTC</span><span id="clock-utc" class="clock">--:--:--</span></div>
+      <div class="clock-block"><span class="clock-label">IST</span><span id="clock-ist" class="clock">--:--:--</span></div>
+      <div class="status-chip" id="link-status" title="Live link status">
+        <span class="led led-amber" id="link-led"></span><span id="link-text">CONNECTING</span>
+      </div>
+      <div class="status-chip" id="src-status" title="Upstream source health">
+        <span class="led led-amber" id="src-led"></span><span id="src-text">SOURCES --/--</span>
+      </div>
+      <button id="btn-refresh" class="chip-btn" title="Force refresh">↻ REFRESH</button>
+    </div>
+  </header>
+
+  <!-- ───────────────────── MAIN GRID ───────────────────── -->
+  <main id="grid">
+
+    <!-- LEFT COLUMN -->
+    <section class="col" id="col-left">
+      <div class="panel" id="panel-ask">
+        <div class="panel-head"><h2>ASK INTEL</h2><span class="panel-tag">AGENTIC RAG</span></div>
+        <div class="panel-body">
+          <form id="ask-form">
+            <input id="ask-input" type="text" placeholder="e.g. risk around Hormuz? India china trade tension?" autocomplete="off" />
+          </form>
+          <div id="ask-answer"></div>
+        </div>
+      </div>
+      <div class="panel" id="panel-brief">
+        <div class="panel-head"><h2>SITUATION BRIEF</h2><span class="panel-tag" id="brief-ts"></span></div>
+        <div class="panel-body" id="brief-body"><div class="empty">Awaiting data…</div></div>
+      </div>
+      <div class="panel grow" id="panel-feed">
+        <div class="panel-head">
+          <h2>LIVE WIRE</h2>
+          <div class="filters" id="feed-filters">
+            <button class="filt active" data-min="0">ALL</button>
+            <button class="filt" data-min="1">NOTICE+</button>
+            <button class="filt" data-min="2">ALERT+</button>
+            <button class="filt" data-min="3">FLASH</button>
+          </div>
+        </div>
+        <div class="panel-body scroll" id="feed-body"><div class="empty">Awaiting wire data…</div></div>
+      </div>
+    </section>
+
+    <!-- CENTER: MAP -->
+    <section id="col-map">
+      <div id="map"></div>
+      <div id="layer-chips">
+        <button class="lchip active" data-layer="conflict"><span class="dot dot-conflict"></span>CONFLICT</button>
+        <button class="lchip active" data-layer="warzone"><span class="dot dot-war"></span>WAR ZONES</button>
+        <button class="lchip active" data-layer="earthquake"><span class="dot dot-quake"></span>SEISMIC</button>
+        <button class="lchip active" data-layer="disaster"><span class="dot dot-disaster"></span>DISASTER</button>
+        <button class="lchip active" data-layer="chokepoint"><span class="dot dot-choke"></span>CHOKEPOINTS</button>
+        <button class="lchip active" data-layer="port"><span class="dot dot-port"></span>IN PORTS</button>
+        <button class="lchip" data-layer="weather"><span class="dot dot-weather"></span>WEATHER</button>
+      </div>
+      <div id="map-counts"></div>
+      <div id="ticker"><div id="ticker-track"></div></div>
+    </section>
+
+    <!-- RIGHT COLUMN -->
+    <section class="col" id="col-right">
+      <div class="panel" id="panel-risk">
+        <div class="panel-head"><h2>GLOBAL RISK INDEX</h2><span class="panel-tag">24H · CI · PROJECTION</span></div>
+        <div class="panel-body scroll" id="risk-body"><div class="empty">Awaiting data…</div></div>
+      </div>
+      <div class="panel" id="panel-choke">
+        <div class="panel-head"><h2>CHOKEPOINT MONITOR</h2></div>
+        <div class="panel-body scroll" id="choke-body"><div class="empty">Awaiting data…</div></div>
+      </div>
+      <div class="panel" id="panel-graph">
+        <div class="panel-head"><h2>INTEL GRAPH</h2><span class="panel-tag" id="graph-tag">CO-REPORTED</span></div>
+        <div class="panel-body scroll" id="graph-body"><div class="empty">Learning…</div></div>
+      </div>
+      <div class="panel" id="panel-streams">
+        <div class="panel-head"><h2>LIVE STREAMS</h2><span class="panel-tag">NEWS · CAMS</span></div>
+        <div class="panel-body scroll" id="streams-body"><div class="empty">Loading channels…</div></div>
+      </div>
+      <div class="panel" id="panel-markets">
+        <div class="panel-head"><h2>MARKET WATCH</h2></div>
+        <div class="panel-body" id="markets-body"><div class="empty">Awaiting data…</div></div>
+      </div>
+      <div class="panel" id="panel-india">
+        <div class="panel-head"><h2>INDIA PORT STATUS</h2><span class="panel-tag">12 MAJOR</span></div>
+        <div class="panel-body scroll" id="india-body"><div class="empty">Awaiting data…</div></div>
+      </div>
+      <div class="panel" id="panel-bias">
+        <div class="panel-head"><h2>SOURCE TRUST</h2><span class="panel-tag">LEARNED</span></div>
+        <div class="panel-body scroll" id="bias-body"><div class="empty">Learning…</div></div>
+      </div>
+      <div class="panel" id="panel-system">
+        <div class="panel-head"><h2>SYSTEM // SOURCES</h2></div>
+        <div class="panel-body" id="system-body"><div class="empty">Awaiting data…</div></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Stream player modal -->
+  <div id="stream-modal" class="hidden">
+    <div id="stream-box">
+      <div id="stream-head"><span id="stream-title"></span><button id="stream-close">✕ CLOSE</button></div>
+      <iframe id="stream-frame" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="origin"></iframe>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/panels.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

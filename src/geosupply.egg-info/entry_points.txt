@@ -1,2 +1,8 @@
 [console_scripts]
 geosupply = geosupply.cli.audit:main
+geosupply-admin = geosupply.cli.admin_cli:main
+geosupply-api = geosupply.api.main:main
+geosupply-dashboard = geosupply.dashboard.admin_dashboard:main
+geosupply-mcp = geosupply.mcp.server:main
+geosupply-playground = geosupply.dashboard.playground:main
+geosupply-start = geosupply.cli.start:main
