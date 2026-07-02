@@ -40,8 +40,10 @@ const Panels = (() => {
       `<span class="brief-text">${Util.esc(h.text)}</span></div>`
     ).join("");
     body.innerHTML = alertHtml + hlHtml;
-    document.getElementById("brief-ts").textContent =
-      "UPDATED " + Util.age(snap.generated_at).toUpperCase() + " AGO";
+    const ts = document.getElementById("brief-ts");
+    ts.textContent = (alerts.length ? `⚠ ${alerts.length} CONVERGENCE · ` : "")
+      + "UPDATED " + Util.age(snap.generated_at).toUpperCase() + " AGO";
+    ts.classList.toggle("brief-alert", alerts.length > 0);
   }
 
   // ── Live wire ─────────────────────────────────────────────────
@@ -123,6 +125,19 @@ const Panels = (() => {
   // ── Chokepoints ───────────────────────────────────────────────
   function renderChokepoints(snap) {
     const body = document.getElementById("choke-body");
+    const head = document.querySelector("#panel-choke .panel-head");
+    if (head && !head.querySelector(".panel-tag")) {
+      const tag = document.createElement("span");
+      tag.className = "panel-tag"; tag.id = "choke-bands-tag";
+      head.appendChild(tag);
+    }
+    const bandsTag = document.getElementById("choke-bands-tag");
+    if (bandsTag) {
+      const b = ((snap.learning || {}).stress_bands || [0.25, 0.5, 0.75])
+        .map((x) => Math.round(x * 100));
+      bandsTag.textContent = `CALIBRATED ${b[0]}·${b[1]}·${b[2]}%`;
+      bandsTag.title = "Self-calibrated ELEVATED / HIGH / CRITICAL cutoffs (learned from observed stress distribution)";
+    }
     const cps = snap.chokepoints || [];
     if (!cps.length) { body.innerHTML = '<div class="empty">No chokepoint data</div>'; return; }
     body.innerHTML = cps.map((c) => {
@@ -257,11 +272,14 @@ const Panels = (() => {
     const srcs = snap.health || [];
     if (!srcs.length) { body.innerHTML = '<div class="empty">No source telemetry</div>'; return; }
     const learn = snap.learning || {};
+    const bands = (learn.stress_bands || [0.25, 0.5, 0.75]).map((b) => Math.round(b * 100));
     const learnHtml = `<div class="learn-row">
       cycle ${learn.cycles ?? 0} · tick ${Math.round(learn.refresh_interval_s ?? 120)}s${learn.surge_mode ? ' · <b class="surge">SURGE</b>' : ""}
       · KG ${learn.kg_nodes ?? 0}n/${learn.kg_edges ?? 0}e
       · proj MAE ${learn.projection_mae ?? "—"} (${learn.projection_samples ?? 0})
-      · ${learn.penalised_sources ?? 0} sources penalised
+      · ${learn.penalised_sources ?? 0} penalised
+      · RAG fb ${learn.rag_trained_sources ?? 0} src
+      · bands ${bands[0]}/${bands[1]}/${bands[2]}%
     </div>`;
     body.innerHTML = learnHtml + srcs.map((s) => {
       const led = s.ok ? "led-green" : (s.breaker_state === "OPEN" ? "led-red" : "led-amber");

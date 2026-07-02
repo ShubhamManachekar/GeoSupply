@@ -15,6 +15,12 @@ ARCHITECTURE:   FA v3 (canonical docs), with FA v2/v10/v9 retained as reference 
 LANGUAGE:       Python 3.10+, async/await, Pydantic v2, type hints everywhere
 BUDGET CAP:     ₹500/month (LOCKED — all costs in INR, never USD)
 HALLUCINATION:  FLOOR = 0.70 (LOCKED — never lower)
+STATUS:         Session 31b: PR #7 MERGED to main. Post-merge verification: strict audit
+                             5/5 (incl. 1226 tests), scripts/verify_subsystems.py 16/16
+                             (backend, middleware, storage, RAG, automations, projections,
+                             statistics). UI: learning telemetry surfaced — calibrated
+                             stress bands on Chokepoint panel + System row, RAG feedback
+                             coverage, convergence-alert count on Situation Brief.
 STATUS:         Session 31 | Workers:19 | Agents:11 | SubAgents:13 | Supervisors:14 | Tests:1226 | Schemas:32
                 Session 31: PR #6 merged; branch restarted from main. CodeRabbit review
                             fixes (cache ok-flag truth, empty-payload TTL, concurrent WS
