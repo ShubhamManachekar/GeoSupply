@@ -75,6 +75,23 @@
     OsintMap.focusTo(c.lat, c.lon, c.zoom);
   }
 
+  // ── freemium plan badge + feature locks ───────────────────────
+  async function loadPlan() {
+    try {
+      const info = await fetchJson("/osint/plan");
+      const chip = document.getElementById("plan-text");
+      chip.textContent = "PLAN " + info.plan;
+      chip.className = "plan-" + info.plan.toLowerCase();
+      if ((info.locked || []).includes("advanced_intel")) {
+        const input = document.getElementById("ask-input");
+        input.disabled = true;
+        input.placeholder = "🔒 ASK INTEL requires the PRO plan (₹499/month)";
+        const tag = document.querySelector("#panel-ask .panel-tag");
+        if (tag) tag.textContent = "🔒 PRO";
+      }
+    } catch (err) { console.warn("plan fetch failed:", err); }
+  }
+
   // ── live streams ──────────────────────────────────────────────
   async function loadStreams() {
     try {
@@ -143,6 +160,7 @@
     // cold start: force a refresh so panels populate immediately,
     // then keep a polling safety net under the WebSocket.
     fetchSnapshot(true);
+    loadPlan();
     loadFocusRegistry();
     loadStreams();
     connectWs();

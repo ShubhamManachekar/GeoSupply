@@ -39,20 +39,14 @@ free, public, key-free endpoints and serves a no-build-step frontend.
 
 ---
 
-## Quick start (OSINT dashboard) — ~30 seconds
+## Quick start — one command
 
 ### macOS / Linux
 
 ```bash
 git clone https://github.com/ShubhamManachekar/GeoSupply.git
 cd GeoSupply
-
-python3 -m venv .venv
-source .venv/bin/activate
-
-pip install -r requirements-osint.txt
-
-./run_dashboard.sh
+./setup.sh          # creates .venv, installs deps, launches the dashboard
 ```
 
 ### Windows (PowerShell)
@@ -60,14 +54,22 @@ pip install -r requirements-osint.txt
 ```powershell
 git clone https://github.com/ShubhamManachekar/GeoSupply.git
 cd GeoSupply
-
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-
-pip install -r requirements-osint.txt
-
-.\run_dashboard.ps1
+.\setup.ps1         # creates .venv, installs deps, launches the dashboard
 ```
+
+Re-runs are instant (the venv is reused). Add `--full` / `-Full` to also
+install the heavy swarm extras. After first setup you can just use
+`./run_dashboard.sh` / `.\run_dashboard.ps1`.
+
+### Docker (no Python needed)
+
+```bash
+docker compose up          # → http://localhost:8000/
+```
+
+The `geosupply-data` volume persists the self-learning state (knowledge
+graph, source credibility, RAG feedback weights, calibrated thresholds)
+across container restarts.
 
 Then open **http://localhost:8000/** — it redirects to the dashboard at `/app/`.
 Interactive API docs are at **http://localhost:8000/docs**.
@@ -130,6 +132,19 @@ Copy `.env.example` → `.env` only if you intend to wire up the full swarm
 (LLM keys, Supabase, India government APIs). The dashboard ignores it.
 
 ---
+
+## Plans (freemium)
+
+| Plan | Price | Unlocks |
+|---|---|---|
+| **FREE** | ₹0 | Full live dashboard: map, wire, risk index, chokepoints, war zones, India ports, markets, streams, focus mode, WebSocket |
+| **PRO** | ₹499/mo | + Agentic RAG (`/osint/ask`), RAG feedback learning, knowledge graph, source-trust profiles |
+| **ENTERPRISE** | ₹4,999/mo | + Full swarm control plane: pipeline, briefs, KG, budget, audit, admin, playground, MCP |
+
+**Self-hosted installs get ENTERPRISE (everything) by default** — the gates
+only activate when a hosted operator sets `GEOSUPPLY_PLAN=FREE|PRO`.
+Check your plan at `GET /osint/plan`; locked endpoints return HTTP 403
+with an upgrade hint. All prices INR.
 
 ## Live data sources (all free, key-free)
 

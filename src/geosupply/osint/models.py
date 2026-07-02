@@ -261,6 +261,9 @@ class LearningStats(BaseModel):
     kg_nodes: int = 0
     kg_edges: int = 0
     penalised_sources: int = 0
+    stress_bands: list[float] = Field(
+        default_factory=lambda: [0.25, 0.50, 0.75])  # calibrator-learned cutoffs
+    rag_trained_sources: int = 0                     # RAG feedback coverage
 
 
 class OsintSnapshot(BaseModel):

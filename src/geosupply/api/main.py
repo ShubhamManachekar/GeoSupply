@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from geosupply.api.routers import health, tasks, pipeline, brief, workers, budget, kg, audit, admin, playground, osint
+from geosupply.osint.plans import require_feature
 
 _log = logging.getLogger(__name__)
 
@@ -79,20 +80,22 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=os.getenv("OSINT_CORS_ORIGINS", "*").split(","),
-        allow_methods=["GET", "POST"],
+        allow_origins=[o.strip() for o in os.getenv("OSINT_CORS_ORIGINS", "*").split(",")],
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
     app.include_router(health.router,    prefix="/health",    tags=["health"])
-    app.include_router(tasks.router,     prefix="/tasks",     tags=["tasks"])
-    app.include_router(pipeline.router,  prefix="/pipeline",  tags=["pipeline"])
-    app.include_router(brief.router,     prefix="/brief",     tags=["brief"])
+    # Swarm control plane — ENTERPRISE plan (self-hosted default = unlocked)
+    swarm_gate = [require_feature("swarm")]
+    app.include_router(tasks.router,     prefix="/tasks",     tags=["tasks"],    dependencies=swarm_gate)
+    app.include_router(pipeline.router,  prefix="/pipeline",  tags=["pipeline"], dependencies=swarm_gate)
+    app.include_router(brief.router,     prefix="/brief",     tags=["brief"],    dependencies=swarm_gate)
     app.include_router(workers.router,   prefix="",           tags=["registry"])
-    app.include_router(budget.router,    prefix="/budget",    tags=["budget"])
-    app.include_router(kg.router,        prefix="/kg",        tags=["knowledge-graph"])
-    app.include_router(audit.router,      prefix="/audit",      tags=["audit"])
-    app.include_router(admin.router,      prefix="/admin",      tags=["admin"])
-    app.include_router(playground.router, prefix="/playground", tags=["playground"])
+    app.include_router(budget.router,    prefix="/budget",    tags=["budget"],   dependencies=swarm_gate)
+    app.include_router(kg.router,        prefix="/kg",        tags=["knowledge-graph"], dependencies=swarm_gate)
+    app.include_router(audit.router,      prefix="/audit",      tags=["audit"],  dependencies=swarm_gate)
+    app.include_router(admin.router,      prefix="/admin",      tags=["admin"],  dependencies=swarm_gate)
+    app.include_router(playground.router, prefix="/playground", tags=["playground"], dependencies=swarm_gate)
     app.include_router(osint.router,      prefix="/osint",      tags=["osint"])
 
     # OSINT dashboard frontend (world-monitor style SPA)

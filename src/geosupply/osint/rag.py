@@ -85,10 +85,22 @@ def _score(text: str, terms: list[str]) -> float:
 
 
 def retrieve(snapshot: OsintSnapshot, sub_queries: list[str],
-             entities: list[str]) -> list[IntelCitation]:
-    """STEP 2+4: per-sub-query retrieval, fused with reciprocal-rank fusion."""
+             entities: list[str],
+             source_weight=None) -> list[IntelCitation]:
+    """
+    STEP 2+4: per-sub-query retrieval, fused with reciprocal-rank fusion.
+
+    `source_weight`, if supplied, is a callable `str -> float` (typically
+    `RagFeedback.weight`) that multiplies each candidate's score before
+    ranking. This is how the RAG feedback loop reweights retrieval —
+    sources users found helpful float up, unhelpful ones sink (never below
+    the floor). Behaviour is identical when omitted.
+    """
     rrf: dict[str, float] = {}
     pool: dict[str, IntelCitation] = {}
+
+    def w(src: str) -> float:
+        return source_weight(src) if source_weight is not None else 1.0
 
     def consider(key: str, citation: IntelCitation, rank: int) -> None:
         rrf[key] = rrf.get(key, 0.0) + 1.0 / (10 + rank)
@@ -102,11 +114,12 @@ def retrieve(snapshot: OsintSnapshot, sub_queries: list[str],
             s = _score(n.title, terms)
             if any(e in n.entities for e in entities):
                 s += 0.5
+            s *= w(n.source)                       # feedback-learned weight
             if s > 0:
                 ranked.append((s, f"news:{n.id}", IntelCitation(
                     kind="news", text=n.title, source=n.source, url=n.url, score=s)))
         for e in snapshot.events:
-            s = _score(e.title, terms)
+            s = _score(e.title, terms) * w(e.source)
             if s > 0:
                 ranked.append((s, f"event:{e.id}", IntelCitation(
                     kind="event", text=e.title, source=e.source, url=e.url, score=s)))
@@ -165,8 +178,15 @@ def synthesize(query: str, sub_queries: list[str], entities: list[str],
 
 
 def answer_query(query: str, snapshot: OsintSnapshot,
-                 kg: OsintKnowledgeGraph | None = None) -> IntelAnswer:
-    """Full agentic pipeline: plan → retrieve → expand → fuse → synthesise."""
+                 kg: OsintKnowledgeGraph | None = None,
+                 source_weight=None) -> IntelAnswer:
+    """
+    Full agentic pipeline: plan → retrieve → expand → fuse → synthesise.
+
+    `source_weight` — optional callable `str -> float` (e.g.
+    `RagFeedback.weight`) that reweights per-source retrieval based on
+    user feedback. Unset → deterministic baseline behaviour.
+    """
     sub_queries, entities = plan(query, kg)
-    citations = retrieve(snapshot, sub_queries, entities)
+    citations = retrieve(snapshot, sub_queries, entities, source_weight=source_weight)
     return synthesize(query, sub_queries, entities, citations)

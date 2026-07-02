@@ -49,4 +49,24 @@ const Util = {
     if (trend === "FLAT") return '<span class="tr tr-fl" title="flat">▬</span>';
     return '<span class="tr tr-new" title="new">●</span>';
   },
+
+  /**
+   * Only http(s) URLs are safe to open in a new tab from untrusted feed data.
+   * Blocks javascript:, data:, file:, vbscript:, etc. Returns "" for invalid.
+   */
+  safeHttpUrl(raw) {
+    if (!raw || typeof raw !== "string") return "";
+    try {
+      const u = new URL(raw, window.location.origin);
+      return (u.protocol === "http:" || u.protocol === "https:") ? u.href : "";
+    } catch (_err) {
+      return "";
+    }
+  },
+
+  /** Open a URL in a new tab only if it passes safeHttpUrl. */
+  openSafe(raw) {
+    const safe = Util.safeHttpUrl(raw);
+    if (safe) window.open(safe, "_blank", "noopener,noreferrer");
+  },
 };

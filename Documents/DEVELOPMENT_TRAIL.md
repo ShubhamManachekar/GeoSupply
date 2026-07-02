@@ -15,7 +15,21 @@ ARCHITECTURE:   FA v3 (canonical docs), with FA v2/v10/v9 retained as reference 
 LANGUAGE:       Python 3.10+, async/await, Pydantic v2, type hints everywhere
 BUDGET CAP:     ₹500/month (LOCKED — all costs in INR, never USD)
 HALLUCINATION:  FLOOR = 0.70 (LOCKED — never lower)
-STATUS:         Session 30 | Workers:19 | Agents:11 | SubAgents:13 | Supervisors:14 | Tests:1201 | Schemas:32
+STATUS:         Session 31 | Workers:19 | Agents:11 | SubAgents:13 | Supervisors:14 | Tests:1226 | Schemas:32
+                Session 31: PR #6 merged; branch restarted from main. CodeRabbit review
+                            fixes (cache ok-flag truth, empty-payload TTL, concurrent WS
+                            broadcast w/ per-client timeout, defusedxml RSS hardening,
+                            USGS per-record robustness, strict port zip, CORS methods,
+                            javascript:-URL guard, a11y). Two NEW self-reinforcement
+                            loops: RagFeedback (thumbs on citations reweight retrieval,
+                            /osint/ask/feedback) + ThresholdCalibrator (stress bands
+                            learned from observed quantiles w/ guard rails). Freemium:
+                            FREE/PRO ₹499/ENTERPRISE ₹4,999 plan gates (self-hosted
+                            default = ENTERPRISE), /osint/plan, frontend badge + locks.
+                            Packaging: setup.sh/setup.ps1 one-command installers,
+                            Dockerfile + docker-compose (persistent learning volume).
+                            setup.sh verified end-to-end: clean venv → live dashboard
+                            in ~24s. 25 new tests (learning + plans).
                 Session 30: OSINT Command dashboard (world-monitor style) — backend
                             geosupply/osint with 7 free key-free live sources (USGS, NASA EONET,
                             GDELT GEO+DOC, RSS wire, markets, Open-Meteo port weather);

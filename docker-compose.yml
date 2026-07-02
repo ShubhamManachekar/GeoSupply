@@ -1,0 +1,15 @@
+# GeoSupply AI — docker compose up  →  http://localhost:8000/
+services:
+  geosupply:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - geosupply-data:/app/data     # persists the self-learning state
+    environment:
+      - OSINT_AUTOSTART=1
+      # - GEOSUPPLY_PLAN=FREE        # uncomment to test freemium gating
+    restart: unless-stopped
+
+volumes:
+  geosupply-data:
