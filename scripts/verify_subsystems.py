@@ -31,7 +31,8 @@ async def main():
     from geosupply.api.routers import osint as osint_mod
     from geosupply.osint.aggregator import OsintAggregator
 
-    agg = OsintAggregator(client=httpx.AsyncClient(transport=httpx.MockTransport(_route_request)))
+    upstream = httpx.AsyncClient(transport=httpx.MockTransport(_route_request))
+    agg = OsintAggregator(client=upstream)
     app = create_app()
     app.dependency_overrides[osint_mod.aggregator_dep] = lambda: agg
 
@@ -45,9 +46,10 @@ async def main():
         # ── 2. MIDDLEWARE ─────────────────────────────────────────
         snap = await agg.refresh(force=True)
         r = await c.get("/osint/snapshot")
-        body = r.json()
-        check("middleware: snapshot aggregation", r.status_code == 200 and body["events"] and body["news"],
-              f"{len(body['events'])} events, {len(body['news'])} news, {len(body['markets'])} quotes")
+        body = r.json() if r.status_code == 200 else {}
+        ev, nw, mk = (body.get(k) or [] for k in ("events", "news", "markets"))
+        check("middleware: snapshot aggregation", r.status_code == 200 and ev and nw,
+              f"{len(ev)} events, {len(nw)} news, {len(mk)} quotes")
         r = await c.get("/osint/snapshot", headers={"Origin": "http://example.com"})
         check("middleware: CORS headers", "access-control-allow-origin" in {k.lower() for k in r.headers})
         os.environ["GEOSUPPLY_PLAN"] = "FREE"
@@ -65,11 +67,11 @@ async def main():
         for _ in range(4):
             agg.rag_feedback.apply([FeedbackEvent(source="BBC World", kind="news", vote=1)])
         agg.save_state()
-        state_file = os.environ["OSINT_STATE_PATH"]
-        raw = json.loads(open(state_file).read())
+        state_text = pathlib.Path(os.environ["OSINT_STATE_PATH"]).read_text(encoding="utf-8")
+        raw = json.loads(state_text)
         check("storage: atomic JSON state written",
               set(raw) >= {"kg", "bias", "projector", "rag_feedback", "calibrator", "cycles"},
-              f"{len(open(state_file).read())} bytes, keys={sorted(raw)[:3]}…")
+              f"{len(state_text)} bytes, keys={sorted(raw)[:3]}…")
         agg2 = OsintAggregator(client=agg._client)
         check("storage: restart restores learners",
               agg2.rag_feedback.weight("BBC World") == agg.rag_feedback.weight("BBC World")
@@ -133,9 +135,11 @@ async def main():
               f"n=2 width {hi1-lo1:.0f} > n=30 width {hi2-lo2:.0f}; density {d1}→{d2}")
 
     await agg.teardown()
+    await upstream.aclose()   # aggregator never closes injected clients
     fails = [n for n, ok, _ in RESULTS if not ok]
     print(f"\n{'='*60}\nSUBSYSTEM VERIFICATION: {len(RESULTS)-len(fails)}/{len(RESULTS)} PASS")
     if fails:
         print("FAILURES:", fails); sys.exit(1)
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
