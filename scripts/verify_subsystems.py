@@ -7,7 +7,11 @@ automations, projections, statistical prediction. Real components, offline
 data via MockTransport where the sandbox blocks the network."""
 import asyncio, json, os, sys, tempfile
 os.environ["OSINT_AUTOSTART"] = "0"
-os.environ["OSINT_STATE_PATH"] = tempfile.mktemp(suffix=".json")
+# mkstemp (not deprecated mktemp): file created atomically — no TOCTOU race.
+_state_fd, _state_path = tempfile.mkstemp(suffix=".json")
+os.close(_state_fd)
+os.unlink(_state_path)  # aggregator treats a missing file as fresh state
+os.environ["OSINT_STATE_PATH"] = _state_path
 import pathlib
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 os.chdir(ROOT)
