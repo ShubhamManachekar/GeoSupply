@@ -20,17 +20,20 @@
       <div class="focus-block">
         <span class="clock-label">FOCUS</span>
         <select id="focus-select"><option value="">GLOBAL</option></select>
-        <button id="btn-india" class="chip-btn india-btn" title="Focus on India">🇮🇳 INDIA</button>
+        <button type="button" id="btn-india" class="chip-btn india-btn" title="Focus on India">🇮🇳 INDIA</button>
       </div>
       <div class="clock-block"><span class="clock-label">UTC</span><span id="clock-utc" class="clock">--:--:--</span></div>
       <div class="clock-block"><span class="clock-label">IST</span><span id="clock-ist" class="clock">--:--:--</span></div>
+      <div class="status-chip" id="plan-chip" title="Active plan">
+        <span id="plan-text">PLAN --</span>
+      </div>
       <div class="status-chip" id="link-status" title="Live link status">
         <span class="led led-amber" id="link-led"></span><span id="link-text">CONNECTING</span>
       </div>
       <div class="status-chip" id="src-status" title="Upstream source health">
         <span class="led led-amber" id="src-led"></span><span id="src-text">SOURCES --/--</span>
       </div>
-      <button id="btn-refresh" class="chip-btn" title="Force refresh">↻ REFRESH</button>
+      <button type="button" id="btn-refresh" class="chip-btn" title="Force refresh">↻ REFRESH</button>
     </div>
   </header>
 
@@ -43,7 +46,8 @@
         <div class="panel-head"><h2>ASK INTEL</h2><span class="panel-tag">AGENTIC RAG</span></div>
         <div class="panel-body">
           <form id="ask-form">
-            <input id="ask-input" type="text" placeholder="e.g. risk around Hormuz? India china trade tension?" autocomplete="off" />
+            <label for="ask-input" class="visually-hidden">Ask the OSINT intelligence system</label>
+            <input id="ask-input" type="text" placeholder="e.g. risk around Hormuz? India china trade tension?" autocomplete="off" aria-label="Ask the OSINT intelligence system" />
           </form>
           <div id="ask-answer"></div>
         </div>
@@ -56,10 +60,10 @@
         <div class="panel-head">
           <h2>LIVE WIRE</h2>
           <div class="filters" id="feed-filters">
-            <button class="filt active" data-min="0">ALL</button>
-            <button class="filt" data-min="1">NOTICE+</button>
-            <button class="filt" data-min="2">ALERT+</button>
-            <button class="filt" data-min="3">FLASH</button>
+            <button type="button" class="filt active" data-min="0">ALL</button>
+            <button type="button" class="filt" data-min="1">NOTICE+</button>
+            <button type="button" class="filt" data-min="2">ALERT+</button>
+            <button type="button" class="filt" data-min="3">FLASH</button>
           </div>
         </div>
         <div class="panel-body scroll" id="feed-body"><div class="empty">Awaiting wire data…</div></div>
@@ -70,13 +74,13 @@
     <section id="col-map">
       <div id="map"></div>
       <div id="layer-chips">
-        <button class="lchip active" data-layer="conflict"><span class="dot dot-conflict"></span>CONFLICT</button>
-        <button class="lchip active" data-layer="warzone"><span class="dot dot-war"></span>WAR ZONES</button>
-        <button class="lchip active" data-layer="earthquake"><span class="dot dot-quake"></span>SEISMIC</button>
-        <button class="lchip active" data-layer="disaster"><span class="dot dot-disaster"></span>DISASTER</button>
-        <button class="lchip active" data-layer="chokepoint"><span class="dot dot-choke"></span>CHOKEPOINTS</button>
-        <button class="lchip active" data-layer="port"><span class="dot dot-port"></span>IN PORTS</button>
-        <button class="lchip" data-layer="weather"><span class="dot dot-weather"></span>WEATHER</button>
+        <button type="button" class="lchip active" data-layer="conflict"><span class="dot dot-conflict"></span>CONFLICT</button>
+        <button type="button" class="lchip active" data-layer="warzone"><span class="dot dot-war"></span>WAR ZONES</button>
+        <button type="button" class="lchip active" data-layer="earthquake"><span class="dot dot-quake"></span>SEISMIC</button>
+        <button type="button" class="lchip active" data-layer="disaster"><span class="dot dot-disaster"></span>DISASTER</button>
+        <button type="button" class="lchip active" data-layer="chokepoint"><span class="dot dot-choke"></span>CHOKEPOINTS</button>
+        <button type="button" class="lchip active" data-layer="port"><span class="dot dot-port"></span>IN PORTS</button>
+        <button type="button" class="lchip" data-layer="weather"><span class="dot dot-weather"></span>WEATHER</button>
       </div>
       <div id="map-counts"></div>
       <div id="ticker"><div id="ticker-track"></div></div>
@@ -122,8 +126,8 @@
   <!-- Stream player modal -->
   <div id="stream-modal" class="hidden">
     <div id="stream-box">
-      <div id="stream-head"><span id="stream-title"></span><button id="stream-close">✕ CLOSE</button></div>
-      <iframe id="stream-frame" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="origin"></iframe>
+      <div id="stream-head"><span id="stream-title"></span><button id="stream-close" type="button">✕ CLOSE</button></div>
+      <iframe id="stream-frame" src="" title="Live stream" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="origin"></iframe>
     </div>
   </div>
 

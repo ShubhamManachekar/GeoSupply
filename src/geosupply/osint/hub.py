@@ -15,6 +15,8 @@ from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 
+SEND_TIMEOUT_S = 5.0  # a client that can't accept a frame in 5s is treated as dead
+
 
 class OsintHub:
     """Tracks connected WebSocket clients and broadcasts JSON payloads."""
@@ -38,21 +40,28 @@ class OsintHub:
             self._clients.discard(ws)
         logger.info("OSINT WS client disconnected (%d total)", len(self._clients))
 
+    async def _send_one(self, ws: WebSocket, message: dict[str, Any]) -> bool:
+        """Send to one client with a timeout; True on success."""
+        try:
+            await asyncio.wait_for(ws.send_json(message), timeout=SEND_TIMEOUT_S)
+            return True
+        except Exception:  # noqa: BLE001 — timeout/closed/error all mean unusable client
+            return False
+
     async def broadcast(self, message: dict[str, Any]) -> int:
-        """Send to all clients; prune the dead. Returns delivered count."""
+        """
+        Send to all clients concurrently with a per-client timeout, then prune
+        the dead. A single slow/backpressured client cannot block the others.
+        """
         async with self._lock:
             clients = list(self._clients)
-        delivered = 0
-        dead: list[WebSocket] = []
-        for ws in clients:
-            try:
-                await ws.send_json(message)
-                delivered += 1
-            except Exception:  # noqa: BLE001 — any send failure means a dead client
-                dead.append(ws)
+        if not clients:
+            return 0
+        results = await asyncio.gather(*(self._send_one(ws, message) for ws in clients))
+        dead = [ws for ws, ok in zip(clients, results) if not ok]
         if dead:
             async with self._lock:
                 for ws in dead:
                     self._clients.discard(ws)
             logger.info("OSINT WS pruned %d dead clients", len(dead))
-        return delivered
+        return sum(results)

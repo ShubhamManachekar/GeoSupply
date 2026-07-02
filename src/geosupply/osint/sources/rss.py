@@ -1,15 +1,34 @@
 """
-RSS news aggregator — global + India outlets, parsed with stdlib XML.
-Supports RSS 2.0 and Atom. No extra dependencies, no API keys.
+RSS news aggregator — global + India outlets.
+Supports RSS 2.0, RDF and Atom. No API keys.
+
+XML hardening: feeds are untrusted external input, so parsing prefers
+`defusedxml` (blocks billion-laughs / external-entity / DTD attacks).
+If defusedxml is not installed it falls back to the stdlib parser, which
+in modern CPython does not resolve external entities but lacks the other
+guards — install defusedxml (in requirements-osint.txt) for full coverage.
 """
 from __future__ import annotations
 
 import asyncio
 import hashlib
 import logging
-import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+
+import xml.etree.ElementTree as _StdET
+
+try:
+    from defusedxml.ElementTree import fromstring as _safe_fromstring
+    from defusedxml import DefusedXmlException
+    _XML_HARDENED = True
+except ImportError:  # pragma: no cover - exercised only without the optional dep
+    _safe_fromstring = _StdET.fromstring
+    DefusedXmlException = Exception
+    _XML_HARDENED = False
+
+# Element class for findall/typing — stdlib Element regardless of parser backend
+ET = _StdET
 
 import httpx
 
@@ -69,8 +88,8 @@ def parse_feed_xml(xml_text: str, source_label: str, region: str) -> list[NewsIt
     """Parse RSS 2.0 / RDF / Atom XML into NewsItems. Never raises on bad items."""
     items: list[NewsItem] = []
     try:
-        root = ET.fromstring(xml_text)
-    except ET.ParseError as exc:
+        root = _safe_fromstring(xml_text)
+    except (_StdET.ParseError, DefusedXmlException, ValueError) as exc:
         logger.warning("RSS parse error for %s: %s", source_label, exc)
         return items
 

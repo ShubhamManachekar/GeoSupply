@@ -15,30 +15,37 @@ USGS_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.ge
 
 
 def parse_usgs(payload: dict) -> list[OsintEvent]:
-    """Normalize a USGS GeoJSON FeatureCollection into OsintEvents."""
+    """Normalize a USGS GeoJSON FeatureCollection into OsintEvents.
+
+    Each feature is parsed defensively — one malformed record is skipped,
+    never aborting the whole feed.
+    """
     events: list[OsintEvent] = []
     for feat in payload.get("features", []):
-        props = feat.get("properties") or {}
-        geom = feat.get("geometry") or {}
-        coords = geom.get("coordinates") or []
-        if len(coords) < 2:
-            continue
-        mag = props.get("mag")
-        ts_ms = props.get("time")
-        events.append(OsintEvent(
-            id=f"usgs-{feat.get('id', '')}",
-            category="earthquake",
-            title=props.get("title") or f"M{mag} earthquake",
-            summary=props.get("place") or "",
-            lat=float(coords[1]),
-            lon=float(coords[0]),
-            severity=min(float(mag or 0.0), 10.0),
-            source="USGS",
-            url=props.get("url") or "",
-            ts=datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
-            if isinstance(ts_ms, (int, float))
-            else datetime.now(timezone.utc),
-        ))
+        try:
+            props = feat.get("properties") or {}
+            geom = feat.get("geometry") or {}
+            coords = geom.get("coordinates") or []
+            if len(coords) < 2:
+                continue
+            mag = props.get("mag")
+            ts_ms = props.get("time")
+            events.append(OsintEvent(
+                id=f"usgs-{feat.get('id', '')}",
+                category="earthquake",
+                title=props.get("title") or f"M{mag} earthquake",
+                summary=props.get("place") or "",
+                lat=float(coords[1]),
+                lon=float(coords[0]),
+                severity=min(float(mag or 0.0), 10.0),
+                source="USGS",
+                url=props.get("url") or "",
+                ts=datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+                if isinstance(ts_ms, (int, float))
+                else datetime.now(timezone.utc),
+            ))
+        except (TypeError, ValueError):
+            continue  # skip the bad record, keep the rest
     return events
 
 

@@ -54,7 +54,8 @@ const Panels = (() => {
       return;
     }
     body.innerHTML = items.slice(0, 60).map((n) => {
-      const open = n.url ? ` data-url="${Util.esc(n.url)}"` : "";
+      const safe = Util.safeHttpUrl(n.url);
+      const open = safe ? ` data-url="${Util.esc(safe)}"` : "";
       return `<div class="feed-item"${open}>
         <div class="feed-meta">
           <span class="prio prio-${n.priority}">${Util.prioLabel(n.priority)}</span>
@@ -68,7 +69,7 @@ const Panels = (() => {
       </div>`;
     }).join("");
     body.querySelectorAll(".feed-item[data-url]").forEach((el) => {
-      el.addEventListener("click", () => window.open(el.dataset.url, "_blank", "noopener"));
+      el.addEventListener("click", () => Util.openSafe(el.dataset.url));
     });
   }
 
@@ -179,8 +180,18 @@ const Panels = (() => {
   }
 
   function openStream(name, url) {
+    // The stream registry is server-controlled, but defence-in-depth: only
+    // allow youtube.com/youtube-nocookie.com embed URLs to reach the iframe.
+    const safe = Util.safeHttpUrl(url);
+    if (!safe) return;
+    try {
+      const host = new URL(safe).host;
+      if (!/(^|\.)youtube(-nocookie)?\.com$/.test(host)) return;
+    } catch (_err) { return; }
     document.getElementById("stream-title").textContent = name;
-    document.getElementById("stream-frame").src = url + "&autoplay=1";
+    const frame = document.getElementById("stream-frame");
+    frame.setAttribute("title", `${name} live stream`);
+    frame.src = safe + (safe.includes("?") ? "&" : "?") + "autoplay=1";
     document.getElementById("stream-modal").classList.remove("hidden");
   }
 
@@ -271,18 +282,65 @@ const Panels = (() => {
   }
 
   // ── Ask intel ─────────────────────────────────────────────────
+  //
+  // Each citation gets thumbs ↑/↓ buttons; a click POSTs to
+  // /osint/ask/feedback which reweights the RAG retriever per source
+  // (self-reinforcement loop).
+  let lastAsk = null;
+
+  async function sendFeedback(query, source, kind, vote, btn) {
+    try {
+      const resp = await fetch("/osint/ask/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, items: [{ source, kind, vote }] }),
+      });
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      const ack = await resp.json();
+      if (btn) {
+        btn.parentElement.querySelectorAll(".vote").forEach((b) => b.classList.remove("voted"));
+        btn.classList.add("voted");
+        btn.parentElement.setAttribute("data-trained", String(ack.trained_sources || 0));
+      }
+    } catch (err) {
+      console.warn("feedback failed:", err);
+    }
+  }
+
   function renderAnswer(ans) {
     const box = document.getElementById("ask-answer");
-    if (!ans) { box.innerHTML = ""; return; }
-    const cites = (ans.citations || []).slice(0, 5).map((c) => {
-      const link = c.url ? ` <a class="pop-link" href="${Util.esc(c.url)}" target="_blank" rel="noopener">↗</a>` : "";
-      return `<div class="cite"><span class="cite-kind">${Util.esc(c.kind)}</span> ${Util.esc(c.text)} <i>${Util.esc(c.source)}</i>${link}</div>`;
+    if (!ans) { box.innerHTML = ""; lastAsk = null; return; }
+    lastAsk = ans;
+    const cites = (ans.citations || []).slice(0, 5).map((c, idx) => {
+      const safe = Util.safeHttpUrl(c.url);
+      const link = safe
+        ? ` <a class="pop-link" href="${Util.esc(safe)}" target="_blank" rel="noopener noreferrer">↗</a>`
+        : "";
+      const voteBtns = c.source
+        ? `<span class="cite-votes" data-idx="${idx}">
+             <button type="button" class="vote up" title="Helpful" aria-label="Helpful">👍</button>
+             <button type="button" class="vote down" title="Not helpful" aria-label="Not helpful">👎</button>
+           </span>`
+        : "";
+      return `<div class="cite" data-source="${Util.esc(c.source)}" data-kind="${Util.esc(c.kind)}">
+        <span class="cite-kind">${Util.esc(c.kind)}</span> ${Util.esc(c.text)}
+        <i>${Util.esc(c.source)}</i>${link}${voteBtns}
+      </div>`;
     }).join("");
     box.innerHTML = `
       <div class="ask-conf">confidence ${(ans.confidence * 100).toFixed(0)}%
         ${ans.entities && ans.entities.length ? " · " + ans.entities.map(Util.esc).join(", ") : ""}</div>
       <div class="ask-text">${Util.esc(ans.answer)}</div>
       ${cites}`;
+    box.querySelectorAll(".vote").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cite = btn.closest(".cite");
+        const source = cite && cite.dataset.source;
+        const kind = cite && cite.dataset.kind;
+        const vote = btn.classList.contains("up") ? 1 : -1;
+        if (source) sendFeedback(lastAsk?.query || "", source, kind || "news", vote, btn);
+      });
+    });
   }
 
   function renderAll(snap) {

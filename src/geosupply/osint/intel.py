@@ -50,17 +50,24 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * _EARTH_RADIUS_KM * math.asin(math.sqrt(a))
 
 
-def _stress_level(index: float) -> str:
-    if index >= 0.75:
+def _stress_level(index: float, bands: tuple[float, float, float] = (0.25, 0.50, 0.75)) -> str:
+    """Band cutoffs default to the static constants; the aggregator passes
+    ThresholdCalibrator-learned cutoffs so bands adapt to the observed
+    stress distribution (self-calibrating thresholds)."""
+    elevated, high, critical = bands
+    if index >= critical:
         return "CRITICAL"
-    if index >= 0.5:
+    if index >= high:
         return "HIGH"
-    if index >= 0.25:
+    if index >= elevated:
         return "ELEVATED"
     return "LOW"
 
 
-def compute_chokepoint_stress(events: list[OsintEvent]) -> list[ChokepointStatus]:
+def compute_chokepoint_stress(
+    events: list[OsintEvent],
+    bands: tuple[float, float, float] = (0.25, 0.50, 0.75),
+) -> list[ChokepointStatus]:
     """
     Stress = saturating function of severity-weighted conflict events
     within each chokepoint's monitoring radius.
@@ -78,7 +85,7 @@ def compute_chokepoint_stress(events: list[OsintEvent]) -> list[ChokepointStatus
         index = round(1.0 - math.exp(-weight / 20.0), 3)
         statuses.append(ChokepointStatus(
             id=cp["id"], name=cp["name"], lat=cp["lat"], lon=cp["lon"],
-            stress_index=index, level=_stress_level(index),
+            stress_index=index, level=_stress_level(index, bands),
             recent_events=nearby, daily_transits=cp["daily_transits"],
             description=cp["description"],
         ))

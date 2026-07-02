@@ -30,7 +30,11 @@ from geosupply.osint.models import (
     SourceHealth,
     WarZone,
 )
+from pydantic import BaseModel, Field
+
+from geosupply.osint.plans import PlanInfo, plan_info, require_feature
 from geosupply.osint.rag import answer_query
+from geosupply.osint.rag_feedback import FeedbackEvent
 from geosupply.osint.registry import COUNTRY_CENTROIDS, COUNTRY_GAZETTEER, LIVE_STREAMS
 
 logger = logging.getLogger(__name__)
@@ -40,6 +44,12 @@ router = APIRouter()
 
 async def aggregator_dep() -> OsintAggregator:
     return get_aggregator()
+
+
+@router.get("/plan", response_model=PlanInfo)
+async def osint_plan():
+    """Active freemium plan + unlocked/locked features (frontend badge)."""
+    return plan_info()
 
 
 @router.get("/snapshot", response_model=OsintSnapshot)
@@ -111,7 +121,8 @@ async def osint_warzones(agg: OsintAggregator = Depends(aggregator_dep)):
     return agg.snapshot().war_zones
 
 
-@router.get("/graph", response_model=list[KGEdge])
+@router.get("/graph", response_model=list[KGEdge],
+            dependencies=[require_feature("advanced_intel")])
 async def osint_graph(
     entity: str | None = Query(default=None),
     limit: int = Query(default=15, ge=1, le=100),
@@ -123,16 +134,66 @@ async def osint_graph(
     return agg.kg.top_edges(limit)
 
 
-@router.get("/ask", response_model=IntelAnswer)
+@router.get("/ask", response_model=IntelAnswer,
+            dependencies=[require_feature("advanced_intel")])
 async def osint_ask(
     q: str = Query(min_length=2, max_length=300),
     agg: OsintAggregator = Depends(aggregator_dep),
 ):
-    """Agentic RAG over the live snapshot: plan → retrieve → KG hop → answer."""
-    return answer_query(q, agg.snapshot(), agg.kg)
+    """Agentic RAG over the live snapshot: plan → retrieve → KG hop → answer.
+
+    Retrieval is reweighted by the RAG feedback learner (thumbs ↑/↓ on
+    prior citations), so answers self-improve as users vote.
+    """
+    return answer_query(q, agg.snapshot(), agg.kg,
+                        source_weight=agg.rag_feedback.weight)
 
 
-@router.get("/sources/bias", response_model=list[SourceBias])
+class FeedbackItem(BaseModel):
+    """One citation vote — used by POST /osint/ask/feedback."""
+    source: str = Field(min_length=1, max_length=120)
+    kind: str = Field(default="news", max_length=32)
+    vote: int = Field(ge=-1, le=1)
+
+
+class FeedbackRequest(BaseModel):
+    """Batch of thumbs on citations from one /osint/ask response."""
+    query: str = Field(default="", max_length=300)
+    items: list[FeedbackItem] = Field(default_factory=list, max_length=32)
+
+
+class FeedbackAck(BaseModel):
+    accepted: int
+    trained_sources: int
+
+
+@router.post("/ask/feedback", response_model=FeedbackAck,
+             dependencies=[require_feature("advanced_intel")])
+async def osint_ask_feedback(
+    payload: FeedbackRequest,
+    agg: OsintAggregator = Depends(aggregator_dep),
+):
+    """Record user votes on RAG citations; reweights retrieval per source."""
+    events = [FeedbackEvent(source=i.source, kind=i.kind, vote=i.vote)
+              for i in payload.items]
+    accepted = agg.rag_feedback.apply(events)
+    if accepted:
+        agg.save_state()
+    return FeedbackAck(accepted=accepted,
+                       trained_sources=agg.rag_feedback.trained_sources)
+
+
+@router.get("/ask/feedback", response_model=list[dict],
+            dependencies=[require_feature("advanced_intel")])
+async def osint_ask_feedback_summary(
+    agg: OsintAggregator = Depends(aggregator_dep),
+):
+    """Learned RAG source weights (top-N, only sources above min-votes gate)."""
+    return agg.rag_feedback.summary()
+
+
+@router.get("/sources/bias", response_model=list[SourceBias],
+            dependencies=[require_feature("advanced_intel")])
 async def osint_sources_bias(agg: OsintAggregator = Depends(aggregator_dep)):
     """News-analysis profiles with learned per-outlet credibility."""
     return agg.snapshot().source_bias

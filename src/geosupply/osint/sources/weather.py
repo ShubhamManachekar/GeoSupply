@@ -51,7 +51,11 @@ def parse_open_meteo(payload: list | dict, ports: list[dict]) -> list[PortStatus
     """Normalize a batched Open-Meteo response against the port registry."""
     rows = payload if isinstance(payload, list) else [payload]
     statuses: list[PortStatus] = []
-    for port, row in zip(ports, rows):
+    if len(rows) != len(ports):
+        # Length mismatch means silent per-port misalignment — refuse to guess.
+        raise ValueError(
+            f"Open-Meteo returned {len(rows)} rows for {len(ports)} ports")
+    for port, row in zip(ports, rows, strict=True):
         current = (row or {}).get("current") or {}
         wind = current.get("wind_speed_10m")
         precip = current.get("precipitation")

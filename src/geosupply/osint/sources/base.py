@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from typing import Any, Generic, TypeVar
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from geosupply.osint.models import SourceHealth
 
@@ -32,7 +32,7 @@ class SourceResult(BaseModel, Generic[T]):
     """Outcome of one refresh cycle for a source."""
     name: str
     ok: bool
-    items: list[Any] = []
+    items: list[Any] = Field(default_factory=list)
     error: str = ""
     latency_ms: float = 0.0
     fetched_at: datetime | None = None
@@ -97,12 +97,15 @@ class BaseSource(ABC):
 
     # ── lifecycle ─────────────────────────────────────────────────────
     def cache_fresh(self) -> bool:
-        return bool(self._cache) and (time.monotonic() - self._cached_at) < self.ttl_s
+        # Use the populated flag (not bool(cache)) so a legitimate empty
+        # result still satisfies the TTL instead of refetching every cycle.
+        return self._cached_at > 0.0 and (time.monotonic() - self._cached_at) < self.ttl_s
 
     async def refresh(self, client: httpx.AsyncClient, force: bool = False) -> SourceResult:
         """Refresh with TTL cache + breaker. Never raises — degrades to cache."""
         if not force and self.cache_fresh():
-            return self._result(ok=self._last_ok or True, items=self._cache)
+            # Report the true last-known health, not an optimistic True.
+            return self._result(ok=self._last_ok, items=self._cache)
 
         if not self._breaker.can_execute():
             self._last_error = "circuit breaker OPEN"

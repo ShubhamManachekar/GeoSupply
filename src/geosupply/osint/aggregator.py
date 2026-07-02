@@ -38,6 +38,8 @@ from geosupply.osint.intel import (
 from geosupply.osint.knowledge_graph import OsintKnowledgeGraph
 from geosupply.osint.models import LearningStats, NewsItem, OsintEvent, OsintSnapshot
 from geosupply.osint.projection import RiskProjector
+from geosupply.osint.calibration import ThresholdCalibrator
+from geosupply.osint.rag_feedback import RagFeedback
 from geosupply.osint.sources import (
     EonetDisasterSource,
     GdeltConflictSource,
@@ -84,18 +86,24 @@ class OsintAggregator:
         self._risk_history: deque[dict[str, float]] = deque(maxlen=12)
         self._choke_history: deque[dict[str, float]] = deque(maxlen=12)
         # Intelligence suite (all CPU, ₹0): KG + bias learning + projections
+        # + RAG feedback (retrieval reweighter learned from user thumbs)
         self.kg = OsintKnowledgeGraph()
         self.bias = SourceBiasTracker()
         self.projector = RiskProjector()
+        self.rag_feedback = RagFeedback()
+        self.calibrator = ThresholdCalibrator()
         self._cycles = 0
         self._interval_s = REFRESH_INTERVAL_S
         self._surge = False
+        # Restore persisted learning state at construction — independent of
+        # whether the caller injects an httpx client or waits for setup().
+        # setup() is a no-op idempotent hook for the client, not the learners.
+        self.load_state()
 
     # ── lifecycle ─────────────────────────────────────────────────────
     async def setup(self) -> None:
         if self._client is None:
             self._client = httpx.AsyncClient(follow_redirects=True)
-        self.load_state()
 
     async def teardown(self) -> None:
         await self.stop_scheduler()
@@ -113,6 +121,8 @@ class OsintAggregator:
                 "kg": self.kg.to_state(),
                 "bias": self.bias.to_state(),
                 "projector": self.projector.to_state(),
+                "rag_feedback": self.rag_feedback.to_state(),
+                "calibrator": self.calibrator.to_state(),
                 "cycles": self._cycles,
             }
             fd, tmp = tempfile.mkstemp(dir=str(state_path.parent), suffix=".tmp")
@@ -134,6 +144,8 @@ class OsintAggregator:
         self.kg.load_state(payload.get("kg") or [])
         self.bias.load_state(payload.get("bias") or {})
         self.projector.load_state(payload.get("projector") or {})
+        self.rag_feedback.load_state(payload.get("rag_feedback") or {})
+        self.calibrator.load_state(payload.get("calibrator") or [])
         try:
             self._cycles = int(payload.get("cycles", 0))
         except (TypeError, ValueError):
@@ -173,7 +185,9 @@ class OsintAggregator:
             bias_profiles = self.bias.analyze(news)      # bias handler learns
             source_weights = {p.source: p.credibility for p in bias_profiles}
 
-            chokepoints = compute_chokepoint_stress(events)
+            chokepoints = compute_chokepoint_stress(
+                events, bands=self.calibrator.bands())
+            self.calibrator.observe([c.stress_index for c in chokepoints])
             risks = compute_country_risk(news, events, source_weights)
             apply_trends(risks, chokepoints,
                          list(self._risk_history), list(self._choke_history))
@@ -212,6 +226,8 @@ class OsintAggregator:
                     kg_nodes=self.kg.node_count,
                     kg_edges=self.kg.edge_count,
                     penalised_sources=self.bias.penalised_count,
+                    stress_bands=list(self.calibrator.bands()),
+                    rag_trained_sources=self.rag_feedback.trained_sources,
                 ),
                 health=[src.health() for src in self.sources],
                 cost_inr=0.0,  # every source on this layer is free
