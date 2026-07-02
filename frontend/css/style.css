@@ -390,3 +390,6 @@ body {
 .plan-free { color: var(--text-dim); }
 .plan-pro { color: var(--amber); }
 .plan-enterprise { color: var(--accent); }
+
+/* ── Learning telemetry accents ─────────────────────────────── */
+.brief-alert { color: var(--red) !important; font-weight: 700; }
