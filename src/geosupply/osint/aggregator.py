@@ -37,6 +37,7 @@ from geosupply.osint.intel import (
 )
 from geosupply.osint.knowledge_graph import OsintKnowledgeGraph
 from geosupply.osint.models import LearningStats, NewsItem, OsintEvent, OsintSnapshot
+from geosupply.osint.okf import build_bundle
 from geosupply.osint.projection import RiskProjector
 from geosupply.osint.calibration import ThresholdCalibrator
 from geosupply.osint.rag_feedback import RagFeedback
@@ -92,6 +93,8 @@ class OsintAggregator:
         self.projector = RiskProjector()
         self.rag_feedback = RagFeedback()
         self.calibrator = ThresholdCalibrator()
+        # OKF 0.1 knowledge bundle — rebuilt every cycle from the snapshot
+        self.okf_bundle: dict[str, str] = {}
         self._cycles = 0
         self._interval_s = REFRESH_INTERVAL_S
         self._surge = False
@@ -151,6 +154,15 @@ class OsintAggregator:
         except (TypeError, ValueError):
             self._cycles = 0
         logger.info("OSINT learning state restored (%d prior cycles)", self._cycles)
+
+    def ensure_okf_bundle(self) -> dict[str, str]:
+        """Lazy-build the OKF bundle (single place for the snapshot/kg/
+        feedback-weight wiring — router handlers must not duplicate it)."""
+        if not self.okf_bundle:
+            self.okf_bundle = build_bundle(
+                self._snapshot, kg=self.kg,
+                source_weight=self.rag_feedback.weight)
+        return self.okf_bundle
 
     @property
     def sources(self) -> list:
@@ -232,6 +244,10 @@ class OsintAggregator:
                 health=[src.health() for src in self.sources],
                 cost_inr=0.0,  # every source on this layer is free
             )
+            # Compile the OKF knowledge bundle (replaces RAG retrieval corpus)
+            self.okf_bundle = build_bundle(
+                self._snapshot, kg=self.kg,
+                source_weight=self.rag_feedback.weight)
             if self._cycles % 5 == 0:
                 self.save_state()
             return self._snapshot
