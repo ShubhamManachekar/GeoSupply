@@ -155,6 +155,15 @@ class OsintAggregator:
             self._cycles = 0
         logger.info("OSINT learning state restored (%d prior cycles)", self._cycles)
 
+    def ensure_okf_bundle(self) -> dict[str, str]:
+        """Lazy-build the OKF bundle (single place for the snapshot/kg/
+        feedback-weight wiring — router handlers must not duplicate it)."""
+        if not self.okf_bundle:
+            self.okf_bundle = build_bundle(
+                self._snapshot, kg=self.kg,
+                source_weight=self.rag_feedback.weight)
+        return self.okf_bundle
+
     @property
     def sources(self) -> list:
         return [self.quakes, self.disasters, self.conflicts, self.gdelt_news,

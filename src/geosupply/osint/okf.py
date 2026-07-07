@@ -28,6 +28,7 @@ loop survives the format change. Pure CPU — cost_inr = 0.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime, timezone
 
 from geosupply.osint.knowledge_graph import OsintKnowledgeGraph
@@ -41,14 +42,21 @@ MAX_WIRE_FACTS = 25
 
 # ── frontmatter ──────────────────────────────────────────────────────
 def _fm(fields: dict) -> str:
-    """Serialise a flat dict to a YAML frontmatter block (spec §3)."""
+    """Serialise a flat dict to a YAML frontmatter block (spec §3).
+
+    All scalars are quoted so YAML consumers can't re-type them (a bare
+    `NO` iso2 would otherwise parse as boolean false).
+    """
+    def q(v) -> str:
+        return '"' + str(v).replace('"', "'") + '"'
+
     lines = ["---"]
     for key, value in fields.items():
         if isinstance(value, list):
             lines.append(f"{key}:")
-            lines.extend(f"  - {v}" for v in value)
+            lines.extend(f"  - {q(v)}" for v in value)
         else:
-            lines.append(f"{key}: {value}")
+            lines.append(f"{key}: {q(value)}")
     lines.append("---")
     return "\n".join(lines) + "\n"
 
@@ -74,7 +82,7 @@ def parse_frontmatter(doc: str) -> dict:
         if not line.strip():
             continue
         if line.startswith("  - ") and current_list:
-            fields.setdefault(current_list, []).append(line[4:].strip())
+            fields.setdefault(current_list, []).append(line[4:].strip().strip('"'))
         elif ":" in line:
             key, _, val = line.partition(":")
             key, val = key.strip(), val.strip()
@@ -89,7 +97,7 @@ def parse_frontmatter(doc: str) -> dict:
 
 # ── bundle builder ───────────────────────────────────────────────────
 def build_bundle(snapshot: OsintSnapshot, kg: OsintKnowledgeGraph | None = None,
-                 source_weight=None) -> dict[str, str]:
+                 source_weight: Callable[[str], float] | None = None) -> dict[str, str]:
     """Compile the live snapshot into an OKF 0.1 bundle (path → markdown)."""
     now = (snapshot.generated_at or datetime.now(timezone.utc)).isoformat()
 
@@ -209,7 +217,7 @@ def build_bundle(snapshot: OsintSnapshot, kg: OsintKnowledgeGraph | None = None,
     for path in concept_paths:
         meta = parse_frontmatter(docs[path])
         index_lines.append(f"* [{meta.get('title', path)}](/{path}) - {meta.get('description', '')}")
-    docs["index.md"] = _fm({"okf_version": f'"{OKF_VERSION}"'}) + "\n".join(index_lines) + "\n"
+    docs["index.md"] = _fm({"okf_version": OKF_VERSION}) + "\n".join(index_lines) + "\n"
 
     # log.md — dated update history (§7)
     docs["log.md"] = (f"# Log\n\n## {now[:10]}\n\n"

@@ -32,7 +32,7 @@ from geosupply.osint.models import (
 )
 from pydantic import BaseModel, Field
 
-from geosupply.osint.okf import answer_from_bundle, build_bundle, parse_frontmatter
+from geosupply.osint.okf import answer_from_bundle, parse_frontmatter
 from geosupply.osint.plans import PlanInfo, plan_info, require_feature
 from geosupply.osint.rag_feedback import FeedbackEvent
 from geosupply.osint.registry import COUNTRY_CENTROIDS, COUNTRY_GAZETTEER, LIVE_STREAMS
@@ -147,10 +147,7 @@ async def osint_ask(
     learner (thumbs ↑/↓) weights which facts enter the bundle, so answers
     still self-improve as users vote.
     """
-    if not agg.okf_bundle:
-        agg.okf_bundle = build_bundle(agg.snapshot(), kg=agg.kg,
-                                      source_weight=agg.rag_feedback.weight)
-    return answer_from_bundle(q, agg.okf_bundle, agg.kg)
+    return answer_from_bundle(q, agg.ensure_okf_bundle(), agg.kg)
 
 
 class FeedbackItem(BaseModel):
@@ -200,10 +197,8 @@ async def osint_ask_feedback_summary(
             dependencies=[require_feature("advanced_intel")])
 async def osint_okf_index(agg: OsintAggregator = Depends(aggregator_dep)):
     """OKF 0.1 bundle listing — GeoSupply as an agent-consumable knowledge producer."""
-    if not agg.okf_bundle:
-        agg.okf_bundle = build_bundle(agg.snapshot(), kg=agg.kg,
-                                      source_weight=agg.rag_feedback.weight)
     out = []
+    agg.ensure_okf_bundle()
     for path, doc in sorted(agg.okf_bundle.items()):
         meta = parse_frontmatter(doc)
         out.append({"path": path, "type": meta.get("type", ""),
@@ -220,10 +215,7 @@ async def osint_okf_document(doc_path: str,
     """Serve one OKF concept document as raw markdown."""
     from fastapi import HTTPException
     from fastapi.responses import PlainTextResponse
-    if not agg.okf_bundle:
-        agg.okf_bundle = build_bundle(agg.snapshot(), kg=agg.kg,
-                                      source_weight=agg.rag_feedback.weight)
-    doc = agg.okf_bundle.get(doc_path)
+    doc = agg.ensure_okf_bundle().get(doc_path)
     if doc is None:
         raise HTTPException(status_code=404, detail=f"no such concept: {doc_path}")
     return PlainTextResponse(doc, media_type="text/markdown")

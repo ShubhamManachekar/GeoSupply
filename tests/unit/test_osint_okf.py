@@ -59,7 +59,8 @@ class TestBundleConformance:
         for path, doc in concepts.items():
             meta = parse_frontmatter(doc)
             assert meta.get("type"), f"{path} missing required type"
-            assert meta.get("title") and meta.get("timestamp"), path
+            assert meta.get("title"), path
+            assert meta.get("timestamp"), path
 
     def test_index_declares_okf_version_and_links_all_concepts(self):
         bundle = build_bundle(_snapshot())
@@ -73,7 +74,8 @@ class TestBundleConformance:
         bundle = build_bundle(_snapshot())
         log = bundle["log.md"]
         assert log.startswith("# Log")
-        assert "**Update**" in log and "## 20" in log  # ISO date heading
+        assert "**Update**" in log
+        assert "## 20" in log  # ISO date heading
 
     def test_top_risk_countries_get_concept_docs(self):
         snap = _snapshot()
@@ -161,7 +163,8 @@ class TestOkfEndpoints:
         resp = await api.get("/osint/ask", params={"q": "red sea shipping risk"})
         assert resp.status_code == 200
         body = resp.json()
-        assert body["citations"] and body["confidence"] > 0
+        assert body["citations"]
+        assert body["confidence"] > 0
 
     async def test_okf_index_lists_bundle(self, api):
         rows = (await api.get("/osint/okf")).json()
