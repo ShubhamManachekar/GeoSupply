@@ -32,8 +32,8 @@ from geosupply.osint.models import (
 )
 from pydantic import BaseModel, Field
 
+from geosupply.osint.okf import answer_from_bundle, build_bundle, parse_frontmatter
 from geosupply.osint.plans import PlanInfo, plan_info, require_feature
-from geosupply.osint.rag import answer_query
 from geosupply.osint.rag_feedback import FeedbackEvent
 from geosupply.osint.registry import COUNTRY_CENTROIDS, COUNTRY_GAZETTEER, LIVE_STREAMS
 
@@ -140,13 +140,17 @@ async def osint_ask(
     q: str = Query(min_length=2, max_length=300),
     agg: OsintAggregator = Depends(aggregator_dep),
 ):
-    """Agentic RAG over the live snapshot: plan → retrieve → KG hop → answer.
+    """OKF knowledge answering (replaces chunk-retrieval RAG).
 
-    Retrieval is reweighted by the RAG feedback learner (thumbs ↑/↓ on
-    prior citations), so answers self-improve as users vote.
+    The query routes to matched OKF concept documents (frontmatter-first),
+    which are loaded whole and composed into a cited answer. The feedback
+    learner (thumbs ↑/↓) weights which facts enter the bundle, so answers
+    still self-improve as users vote.
     """
-    return answer_query(q, agg.snapshot(), agg.kg,
-                        source_weight=agg.rag_feedback.weight)
+    if not agg.okf_bundle:
+        agg.okf_bundle = build_bundle(agg.snapshot(), kg=agg.kg,
+                                      source_weight=agg.rag_feedback.weight)
+    return answer_from_bundle(q, agg.okf_bundle, agg.kg)
 
 
 class FeedbackItem(BaseModel):
@@ -190,6 +194,39 @@ async def osint_ask_feedback_summary(
 ):
     """Learned RAG source weights (top-N, only sources above min-votes gate)."""
     return agg.rag_feedback.summary()
+
+
+@router.get("/okf", response_model=list[dict],
+            dependencies=[require_feature("advanced_intel")])
+async def osint_okf_index(agg: OsintAggregator = Depends(aggregator_dep)):
+    """OKF 0.1 bundle listing — GeoSupply as an agent-consumable knowledge producer."""
+    if not agg.okf_bundle:
+        agg.okf_bundle = build_bundle(agg.snapshot(), kg=agg.kg,
+                                      source_weight=agg.rag_feedback.weight)
+    out = []
+    for path, doc in sorted(agg.okf_bundle.items()):
+        meta = parse_frontmatter(doc)
+        out.append({"path": path, "type": meta.get("type", ""),
+                    "title": meta.get("title", path),
+                    "description": meta.get("description", ""),
+                    "bytes": len(doc)})
+    return out
+
+
+@router.get("/okf/{doc_path:path}",
+            dependencies=[require_feature("advanced_intel")])
+async def osint_okf_document(doc_path: str,
+                             agg: OsintAggregator = Depends(aggregator_dep)):
+    """Serve one OKF concept document as raw markdown."""
+    from fastapi import HTTPException
+    from fastapi.responses import PlainTextResponse
+    if not agg.okf_bundle:
+        agg.okf_bundle = build_bundle(agg.snapshot(), kg=agg.kg,
+                                      source_weight=agg.rag_feedback.weight)
+    doc = agg.okf_bundle.get(doc_path)
+    if doc is None:
+        raise HTTPException(status_code=404, detail=f"no such concept: {doc_path}")
+    return PlainTextResponse(doc, media_type="text/markdown")
 
 
 @router.get("/sources/bias", response_model=list[SourceBias],

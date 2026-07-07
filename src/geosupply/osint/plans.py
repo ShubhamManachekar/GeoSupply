@@ -6,9 +6,9 @@ Monetisation model for the OSINT platform. All amounts INR (never USD).
   FREE        ₹0/month        Live OSINT dashboard: map, wire, risk index,
                               chokepoints, war zones, India ports, markets,
                               streams, focus mode, WebSocket live link.
-  PRO         ₹499/month      + Advanced intelligence: agentic RAG (/ask),
-                              RAG feedback learning, knowledge graph,
-                              source-trust profiles, risk projections API.
+  PRO         ₹499/month      + Advanced intelligence: OKF knowledge engine
+                              (/ask + /okf bundle), feedback learning,
+                              knowledge graph, source-trust profiles.
   ENTERPRISE  ₹4,999/month    + Full swarm: pipeline/brief/KG/budget/audit,
                               admin console, playground, MCP server,
                               custom sources & SLAs.
@@ -38,7 +38,7 @@ PLAN_PRICES_INR: dict[str, int] = {"FREE": 0, "PRO": 499, "ENTERPRISE": 4999}
 # feature key → minimum plan that unlocks it
 FEATURE_MIN_PLAN: dict[str, str] = {
     "dashboard": "FREE",          # map + panels + WS + streams + focus
-    "advanced_intel": "PRO",      # /ask, /ask/feedback, /graph, /sources/bias
+    "advanced_intel": "PRO",      # /ask, /ask/feedback, /okf, /graph, /sources/bias
     "swarm": "ENTERPRISE",        # pipeline/brief/kg/budget/audit/admin/playground
 }
 

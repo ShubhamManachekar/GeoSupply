@@ -9,7 +9,7 @@ dashboard runs at ₹0.
 ┌─────────────────────────────────────────────────────────────────┐
 │  Browser  →  http://localhost:8000/                               │
 │     │         (dark map · live wire · risk · chokepoints ·        │
-│     │          war zones · India ports · intel graph · ask-RAG)   │
+│     │          war zones · India ports · intel graph · ask-OKF)   │
 │     ▼                                                             │
 │  FastAPI  ──  /osint/* REST  +  /osint/ws live WebSocket stream   │
 │     │                                                             │
@@ -17,8 +17,8 @@ dashboard runs at ₹0.
 │  OsintAggregator (single writer, background scheduler)            │
 │     ├─ free key-free sources: USGS · NASA EONET · GDELT ·         │
 │     │   RSS wire (15 feeds) · markets · Open-Meteo                 │
-│     └─ intelligence: knowledge graph · agentic RAG · bias         │
-│         handler · self-improving risk projections                 │
+│     └─ intelligence: knowledge graph · OKF knowledge engine ·     │
+│         bias handler · self-improving risk projections            │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -68,7 +68,7 @@ docker compose up          # → http://localhost:8000/
 ```
 
 The `geosupply-data` volume persists the self-learning state (knowledge
-graph, source credibility, RAG feedback weights, calibrated thresholds)
+graph, source credibility, feedback weights, calibrated thresholds)
 across container restarts.
 
 Then open **http://localhost:8000/** — it redirects to the dashboard at `/app/`.
@@ -138,7 +138,7 @@ Copy `.env.example` → `.env` only if you intend to wire up the full swarm
 | Plan | Price | Unlocks |
 |---|---|---|
 | **FREE** | ₹0 | Full live dashboard: map, wire, risk index, chokepoints, war zones, India ports, markets, streams, focus mode, WebSocket |
-| **PRO** | ₹499/mo | + Agentic RAG (`/osint/ask`), RAG feedback learning, knowledge graph, source-trust profiles |
+| **PRO** | ₹499/mo | + OKF knowledge engine (`/osint/ask`, `/osint/okf` bundle), feedback learning, knowledge graph, source-trust profiles |
 | **ENTERPRISE** | ₹4,999/mo | + Full swarm control plane: pipeline, briefs, KG, budget, audit, admin, playground, MCP |
 
 **Self-hosted installs get ENTERPRISE (everything) by default** — the gates
@@ -178,7 +178,7 @@ data and flags it in the **System // Sources** panel — it never fabricates.
 GeoSupply/
 ├── src/geosupply/
 │   ├── api/            FastAPI app + routers (osint, health, tasks, …)
-│   ├── osint/          OSINT layer: sources, aggregator, intel, KG, RAG, bias
+│   ├── osint/          OSINT layer: sources, aggregator, intel, KG, OKF, bias
 │   ├── agents/ workers/ supervisors/ subagents/   the swarm
 │   ├── orchestrator/   SwarmMaster (DAG routing)
 │   └── cli/  mcp/  dashboard/

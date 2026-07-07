@@ -15,6 +15,17 @@ ARCHITECTURE:   FA v3 (canonical docs), with FA v2/v10/v9 retained as reference 
 LANGUAGE:       Python 3.10+, async/await, Pydantic v2, type hints everywhere
 BUDGET CAP:     ₹500/month (LOCKED — all costs in INR, never USD)
 HALLUCINATION:  FLOOR = 0.70 (LOCKED — never lower)
+STATUS:         Session 32: RAG → OKF migration. /osint/ask now answers via the Open
+                             Knowledge Format 0.1 engine (osint/okf.py): every cycle the
+                             snapshot compiles into an OKF bundle (concept markdown docs
+                             w/ YAML frontmatter, index.md + log.md per spec); questions
+                             route frontmatter-first to concepts, loaded WHOLE (no chunk
+                             retrieval). New /osint/okf + /osint/okf/{path} endpoints make
+                             GeoSupply an agent-consumable knowledge producer (PRO-gated).
+                             Feedback learner survives: weights rank facts into the wire
+                             concept. rag.py retained for query planning + as library
+                             retriever. 16 new tests (spec conformance, routing,
+                             answering, endpoints). Full suite 1242 passed.
 STATUS:         Session 31b: PR #7 MERGED to main. Post-merge verification: strict audit
                              5/5 (incl. 1226 tests), scripts/verify_subsystems.py 16/16
                              (backend, middleware, storage, RAG, automations, projections,

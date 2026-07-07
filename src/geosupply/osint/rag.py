@@ -1,6 +1,11 @@
 """
 GeoSupply AI — Agentic RAG over the live OSINT snapshot.
 
+NOTE (OKF migration): the /osint/ask API path now answers via the OKF 0.1
+knowledge engine (osint/okf.py) — knowledge-document loading instead of
+chunk retrieval. This module remains for query planning (plan() routes OKF
+concept selection) and as a library-level lexical retriever.
+
 Mirrors the v8 fixed RAG sequence, deterministically and at ₹0:
 
   STEP 1  PLAN       decompose the query into entity/topic sub-queries
