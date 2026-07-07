@@ -117,7 +117,7 @@ class TestOkfAnswering:
     def test_citation_urls_extracted_from_facts(self):
         ans = answer_from_bundle("iran attack news", build_bundle(_snapshot()))
         urls = [c.url for c in ans.citations if c.url]
-        assert any(u.startswith("https://example.com") for u in urls)
+        assert "https://example.com/a" in urls  # exact match (CodeQL)
 
     def test_no_match_is_honest(self):
         ans = answer_from_bundle("antarctica penguin festival",
