@@ -54,13 +54,20 @@ def _fm(fields: dict) -> str:
 
 
 def parse_frontmatter(doc: str) -> dict:
-    """Minimal parser for OKF frontmatter (conformance checks + routing)."""
-    if not doc.startswith("---"):
+    """Minimal parser for OKF frontmatter (conformance checks + routing).
+
+    Fences are matched as standalone `---` LINES (a later horizontal rule
+    in the body cannot terminate the block early or be mistaken for one).
+    """
+    lines_all = doc.splitlines()
+    if not lines_all or lines_all[0].strip() != "---":
         return {}
     try:
-        block = doc.split("---", 2)[1]
-    except IndexError:
+        end = next(i for i, ln in enumerate(lines_all[1:], start=1)
+                   if ln.strip() == "---")
+    except StopIteration:
         return {}
+    block = "\n".join(lines_all[1:end])
     fields: dict = {}
     current_list: str | None = None
     for line in block.splitlines():
@@ -259,7 +266,15 @@ def answer_from_bundle(query: str, bundle: dict[str, str],
         doc = bundle[path]
         meta = parse_frontmatter(doc)
         kind = _DOC_KIND.get(str(meta.get("type", "")), "news")
-        facts = [ln[2:].strip() for ln in doc.splitlines() if ln.startswith("- ")]
+        # Only bullets under "## Key facts" are facts — other bulleted
+        # sections (links, indexes) must not leak into citations.
+        facts: list[str] = []
+        in_facts = False
+        for ln in doc.splitlines():
+            if ln.startswith("## "):
+                in_facts = ln.strip().lower() == "## key facts"
+            elif in_facts and ln.startswith("- "):
+                facts.append(ln[2:].strip())
         relevant = [f for f in facts if any(t in f.lower() for t in terms)] or facts[:2]
         for fact in relevant[:3]:
             url = ""

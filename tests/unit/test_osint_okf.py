@@ -5,6 +5,8 @@ Real logic throughout (project rule); external HTTP via MockTransport only.
 """
 from __future__ import annotations
 
+import hashlib
+
 import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -24,7 +26,8 @@ RESERVED = {"index.md", "log.md"}
 
 def _news(title: str, source: str = "wire", priority: int = 2,
           url: str = "") -> NewsItem:
-    return NewsItem(id=f"n-{hash((title, source))}", title=title, source=source,
+    uid = hashlib.md5(f"{title}|{source}".encode()).hexdigest()[:10]
+    return NewsItem(id=f"n-{uid}", title=title, source=source,
                     priority=priority, url=url)
 
 
@@ -97,9 +100,9 @@ class TestConceptRouting:
         kg = OsintKnowledgeGraph()
         kg.observe([NewsItem(id="k1", title="x", source="w", priority=2,
                              entities=["Iran", "Yemen"])])
-        snap = _snapshot()
-        bundle = build_bundle(snap, kg=kg)
-        _, entities_no_kg = [], select_concepts("iran outlook", bundle)
+        bundle = build_bundle(_snapshot(), kg=kg)
+        paths = select_concepts("iran outlook", bundle, kg=kg)
+        assert paths                                  # KG-aware routing resolves
         from geosupply.osint.rag import plan
         _, ents = plan("iran outlook", kg)
         assert "Yemen" in ents  # one KG hop feeds concept selection
